@@ -1,6 +1,6 @@
 # Diseño de la siguiente fase backend
 
-Estado: propuesta de diseño. No implementa autenticación, endpoints de datos ni acceso a PostgreSQL.
+Estado: diseño aprobado para contract-first; modelos de respuesta implementados. No implementa autenticación, endpoints de datos ni acceso a PostgreSQL.
 
 ## Límites de la entrega actual
 
@@ -50,6 +50,8 @@ El contrato de diseño contiene únicamente:
 
 Todos requieren `bearerAuth`. Las respuestas de error comparten `code`, `message`, `requestId` y detalles opcionales. No se añade un endpoint de telemetría ni mutaciones hasta acordar retención, permisos, origen de datos, paginación y límites.
 
+Los modelos Go correspondientes están en `backend/internal/contracts/overview.go`. Sus pruebas de serialización cubren `null` para lecturas/fechas ausentes, el sobre de errores y las respuestas de listas. El paquete no registra rutas ni resuelve identidad: es una representación de contrato para la siguiente implementación.
+
 ## Puerta de entrada antes de datos reales
 
 No se implementará el adaptador HTTP ni se sustituirá la fixture hasta disponer de:
@@ -61,3 +63,10 @@ No se implementará el adaptador HTTP ni se sustituirá la fixture hasta dispone
 5. estrategia de errores, rate limiting, auditoría y observabilidad;
 6. pruebas de autorización que intenten cruzar organizaciones;
 7. decisión sobre retención y calidad de telemetría.
+
+## Verificación contract-first
+
+- RED: `go test ./internal/contracts` no compiló antes de crear los modelos.
+- GREEN: `go test ./...` pasa; `go vet ./...` y `go build ./...` también pasan.
+- Las pruebas están en `backend/internal/contracts/overview_test.go`.
+- Los logs reproducibles están en `docs/evidence/backend-contract-first-2026-11-16/`.

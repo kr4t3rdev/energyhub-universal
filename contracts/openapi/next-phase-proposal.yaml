@@ -5,7 +5,7 @@ info:
   description: |
     Diseño no implementado para la primera lectura autenticada de instalaciones.
     /health sigue siendo solo liveness y no forma parte de estos datos.
-  x-status: proposed
+  x-status: contract-first-proposal
 paths:
   /v1/me:
     get:
@@ -180,9 +180,8 @@ components:
           items:
             $ref: '#/components/schemas/DeviceSummary'
         updatedAt:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
     ReadingSummary:
       type: object
       required: [label, value, unit, measuredAt]
@@ -190,14 +189,12 @@ components:
         label:
           type: string
         value:
-          type: number
-          nullable: true
+          type: [number, 'null']
         unit:
           type: string
         measuredAt:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
     DeviceSummary:
       type: object
       required: [id, name, kind, status]
@@ -210,8 +207,7 @@ components:
         kind:
           type: string
         status:
-          type: string
-          nullable: true
+          type: [string, 'null']
     ErrorResponse:
       type: object
       required: [code, message, requestId]
