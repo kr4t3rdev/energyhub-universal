@@ -1,0 +1,142 @@
+# Bootstrap 00 — environment and verification
+
+Date: 2026-11-15. Repository: `/Volumes/Server/Proyectos/energyhub-universal` (external volume). `df -h`: approximately 559 GiB free at start. Directory creation and writes succeeded; no existing directory was overwritten.
+
+Tools observed: Git 2.51.0; Node 22.23.4; pnpm 11.0.8; Go 1.27.1; Xcode 27.0 (27A266a); Swift 6.4; Java 21.0.12; Docker CLI 29.8.0 and Compose 5.5.1. No Android SDK was found at the standard home path or configured in ANDROID_HOME / ANDROID_SDK_ROOT; no Gradle executable found. No available iOS Simulator runtime was listed. XcodeGen was installed and generated the committed Xcode project.
+
+## Verification
+
+- Backend RED: `go test ./internal/platform/httpapi` failed with undefined `NewRouter`, before implementation.
+- Backend GREEN: `go test ./...` passed; `go build ./...` passed. Chi 5.5.0 and pgx 5.13.0 downloaded and recorded in go.mod/go.sum. pgx is reserved for database work; no database access exists yet.
+- iOS: `xcodebuild -project EnergyHub.xcodeproj -scheme EnergyHub -sdk iphonesimulator -configuration Debug -derivedDataPath <repo>/.local/DerivedData CODE_SIGNING_ALLOWED=NO build` passed. No runnable simulator runtime; smoke test not executed. Host Xcode settings unexpectedly directed build products and intermediates to `/Volumes/Server/XCode`; the build log also reported removing a stale Cashflow intermediate file there. Future builds must set `SYMROOT` and `OBJROOT` inside the repository explicitly.
+- Web: `pnpm create next-app@latest ...` generated files but installation failed with `ERR_PNPM_META_FETCH_FAIL` for @tailwindcss/node following network timeouts. No pnpm lockfile, lint, smoke or build verified. Retry `cd apps/web && pnpm install`, then `pnpm lint && pnpm build`; commit the resulting lockfile after verification.
+- Android: project scaffold only; no SDK, Gradle wrapper, dependency lock or build/test verified. Install/configure Android SDK and an appropriate Gradle 8.11.1 locally before producing a wrapper, locking dependencies and running `:app:testDebugUnitTest :app:assembleDebug`. The current unit test is only a placeholder, not a UI smoke test.
+- Docker: `docker info` failed because the Docker daemon socket was unavailable. Compose is untested. Configure a local `POSTGRES_PASSWORD` in the shell, start Docker, then `docker compose -f infrastructure/compose.yaml up -d` and inspect health; do not commit credentials.
+- CI is configured but has not run. Web CI requires a successful installation and lockfile. No remote configured and no initial commit created.
+
+Directories under `device-catalog`, `fixtures`, `simulators` and `sdks` are placeholders only. Hardware protocol research, actual simulators, device compatibility, migration integration, contract tests and native smoke execution remain pending. No auth, billing, or connectors are implemented.
+
+## Dependency installation — 2026-11-15 (later session)
+
+Workspace: `/Volumes/Server/Proyectos/energyhub-universal` (branch `main`, no initial commit yet). All local tooling lives under `.local/` (gitignored). `.local/env.sh` exports `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `JAVA_HOME` (21), `GRADLE_USER_HOME`, `GOPATH`, `GOMODCACHE` and `GOCACHE`.
+
+### Installed and verified
+
+- Backend: `go mod download && go mod verify` passed (chi 5.5.0, pgx 5.13.0 already in `go.sum`); `go build ./...` and `go test ./...` passed. `go run ./cmd/api` answered `{"status":"ok"}` on `/health` (process liveness only, no database access yet).
+- Web: `pnpm install` succeeded (pnpm 11.0.8, Node 22.23.4), resolving 426 packages and generating `apps/web/pnpm-lock.yaml`; `pnpm lint` and `pnpm build` (Next.js 16.4.6) passed; `pnpm start` served HTTP 200 on `/`.
+- iOS: no external packages (no `Package.swift`, no `Package.resolved`, no `Podfile`); `xcodebuild -resolvePackageDependencies` resolved zero sources and `xcodebuild build` succeeded with `SYMROOT`/`OBJROOT` pinned inside `.local/DerivedData`.
+- Android: `gradle :app:testDebugUnitTest :app:assembleDebug` passed with Gradle 8.11.1 on JDK 21 (33m48s on this host; the Kotlin/Compose compile dominates). `SmokeTest` ran 1 test with 0 failures and 0 errors, and `app/build/outputs/apk/debug/app-debug.apk` (8.8 MB) was produced with `package=com.energyhub.universal`, `minSdkVersion=26`, `targetSdkVersion=35`, `compileSdkVersion=35`. The unit test is still only a placeholder, not a UI smoke test, and no emulator/device run was performed.
+- Docker: `postgres:17.6` image pulled (digest `sha256:00bc8661…`, 666 MB on disk). The stack is up and healthy (`infrastructure-postgres-1`, `127.0.0.1:5434->5432/tcp`); the `energyhub` database and role connect successfully.
+
+### Toolchain installed locally
+
+- Android SDK in `.local/android-sdk`: command-line tools 13114758, `platform-tools` 37.0.1, `platforms;android-35`, `build-tools;35.0.0`; licenses accepted.
+- Gradle 8.11.1 in `.local/tools/gradle-8.11.1` (version used by CI). `apps/android/local.properties` points `sdk.dir` at the local SDK.
+
+### Network notes
+
+`registry.npmjs.org` and `dl.google.com` are reachable but slow (13 s per npm metadata request, roughly 600 KB/s). A plain `pnpm install` timed out after 15 minutes; the successful run used `npm_config_fetch_timeout=600000`, `npm_config_fetch_retries=10`, `npm_config_network_concurrency=8` and `--prefer-offline` (2m19s).
+
+### Blockers and deviations
+
+- Host PostgreSQL 17 (Homebrew) already listens on `127.0.0.1:5432` and `127.0.0.1:5433`, so the compose port could not bind as declared. `infrastructure/compose.yaml` was left untouched; `.local/compose.override.yaml` (gitignored) republishes the container as `127.0.0.1:5434:5432` using the `!override` tag. Run the stack with `docker compose -f infrastructure/compose.yaml -f .local/compose.override.yaml up -d`.
+- The generated password is stored in `.local/postgres-password` (mode 600, gitignored). Export it as `POSTGRES_PASSWORD` before any compose command; do not commit it.
+- `apps/android` still has no Gradle wrapper committed. CI invokes `gradle` directly with version 8.11.1, so a wrapper is optional; generating it would add a binary `gradle-wrapper.jar` to the repository.
+- No Notion MCP server is configured in this harness, so the project plan required by `AGENTS.md` could not be updated; this file is the only local evidence record.
+- CI has still not run: no remote is configured and no initial commit exists. The new `apps/web/pnpm-lock.yaml` is still untracked and must be committed before `pnpm install --frozen-lockfile` can pass in CI.
+- No Android SDK/Gradle was found on the host before this session; hardware compatibility remains unverified and no device connector, authentication or billing was introduced.
+
+## Database moved to the local Homebrew PostgreSQL — 2026-11-15 (later session)
+
+The Docker daemon was consuming too many resources on this Mac, so the project now uses the Homebrew PostgreSQL 17 instance instead of the `postgres:17.6` container.
+
+### Local database
+
+- Instance: PostgreSQL 17.11 using the Homebrew binary, listening on `127.0.0.1:5433` with data directory `~/pgdata-tcp-test`. It is managed by the launchd agent `~/Library/LaunchAgents/dev.tcp.shadow-postgres-5433.plist` (`RunAtLoad` + `KeepAlive`), so it starts with the user session and restarts if it dies. The cluster is shared with other local projects (`tcp_*`, `financemdm_*` databases).
+- Host port map (all three are PostgreSQL 17): 5432 → `/Library/PostgreSQL/17/data` (postgres.org install, runs as user `postgres`); 5433 → `~/pgdata-tcp-test` (the one this project uses); 55439 → a temporary cluster under `/tmp/tcp-ledger-pg.*`.
+- The Homebrew service `sh.brew.postgresql@17` is registered but failing: its data directory `/opt/homebrew/var/postgresql@17` does not exist, so it never initialized. It is redundant with the working launchd agent and could be unloaded.
+- Provisioned with the same contract as `infrastructure/compose.yaml`: role `energyhub` (`LOGIN`, `CREATEDB`, not superuser — least privilege), database `energyhub` owned by that role, UTF-8. `REVOKE ALL ON DATABASE energyhub FROM PUBLIC` plus `GRANT CONNECT, TEMPORARY TO energyhub`.
+- The password is the one already generated for the Docker stack, stored in `.local/postgres-password` (mode 600). The role was rotated to it, so credentials are interchangeable between local and Docker.
+- Verified end to end over TCP: `psql -h 127.0.0.1 -p 5433 -U energyhub -d energyhub` authenticates with the password and can create and drop tables.
+
+### Configuration
+
+- `.env.local` (repo root, gitignored via `.gitignore:5`, mode 600) holds `DATABASE_URL` and the `POSTGRES_*` variables pointing at `127.0.0.1:5433`. Do not commit it.
+- `.local/env.sh` now sources `.env.local` and exports `DATABASE_URL`, so `source .local/env.sh` gives the backend its connection settings. It prints the URL with the password visible in the terminal — keep that output off shared screens and logs.
+- The backend still has no database code (`backend/cmd/api/main.go`, `backend/internal/platform/httpapi/router.go` only) and `backend/migrations/` is an empty placeholder. No connection logic was added: Bootstrap 00 keeps health as process liveness and pgx remains reserved for later database work.
+
+### Docker fallback
+
+`postgres:17.6` remains pulled and the compose file is unchanged. To go back to the container: `POSTGRES_PASSWORD=$(cat .local/postgres-password) docker compose -f infrastructure/compose.yaml -f .local/compose.override.yaml up -d` (it publishes `127.0.0.1:5434` because 5432 and 5433 are taken). The container was left stopped; Docker Desktop was shut down during this session.
+
+## Web installation follow-up — 2026-11-15
+
+`pnpm list --depth 0` confirms the project dependencies are installed and `apps/web/pnpm-lock.yaml` exists. The initial retry had registry timeouts; its final process result is unavailable, but the installed state was verified independently. Resolved direct versions: Next 16.4.6, React and React DOM 19.3.0, Tailwind and its Turbopack integration 4.3.3, TypeScript 5.9.3, ESLint 9.39.5, eslint-config-next 16.4.6, @types/node 20.19.43 and React/React DOM types 19.3.0. `pnpm lint` and `pnpm build` both passed; the build also ran TypeScript checks and generated the static routes. Browser smoke testing remains pending. Notion update was attempted but its connector was unavailable and the browser fallback timed out; this entry should be copied to the existing Bootstrap 00 tracking section when access is restored.
+
+## Dependency review — 2026-11-15
+
+- Backend: Go 1.27.1; module resolution succeeded (`go list -m all`); `go test ./...` and `go build ./...` passed.
+- iOS: Xcode 27.0 and XcodeGen 2.46.0 are available; the Xcode project exists. `xcrun simctl list runtimes` listed no runtimes, so simulator execution remains blocked. The iOS app has no external package dependencies configured.
+- Android: the project-local Android SDK includes platform 35 and build tools 35.0.0; project-local Gradle 8.11.1 and Java 21 are available. Running `:app:testDebugUnitTest :app:assembleDebug` with Gradle offline succeeded; all 41 tasks were up-to-date, so previous cached outputs were reused, including the existing unit-test result. This does not establish emulator or device execution. Gradle wrapper and dependency locking remain absent.
+- Docker CLI and Compose are installed, but the Docker daemon is unavailable, so PostgreSQL could not be checked.
+- The Notion connector remained unavailable during this review. Update the existing project plan when access is restored.
+
+## Gradle — dependencia de Android
+
+Gradle **8.11.1** es necesario para compilar y probar Android, junto con JDK 21 y Android SDK 35. En este Mac ya está instalado localmente en `.local/tools/gradle-8.11.1`; esa carpeta está excluida de Git y debe instalarse de nuevo al preparar otra máquina. La distribución oficial está disponible en https://gradle.org/releases/; instálala dentro de `.local/tools/` o configura Gradle 8.11.1 por otro medio autorizado. No se requiere instalación global.
+
+Desde la raíz del repositorio, después de configurar el SDK y el JDK, ejecutar:
+
+```sh
+GRADLE_USER_HOME="$PWD/.local/gradle-home" \
+  .local/tools/gradle-8.11.1/bin/gradle -p apps/android \
+  :app:testDebugUnitTest :app:assembleDebug
+```
+
+`apps/android/local.properties` debe apuntar al SDK de cada máquina y permanece fuera de Git. Todavía no se ha agregado el Gradle Wrapper ni un bloqueo de dependencias de Gradle. CI instala Gradle 8.11.1 mediante `gradle/actions/setup-gradle`.
+
+## Verificación PostgreSQL local — 2026-11-15
+
+La configuración actual usa PostgreSQL de Homebrew en `127.0.0.1:5433`, no el contenedor como ruta principal. `pg_isready` respondió y una consulta de solo lectura mediante la configuración local conectó a la base `energyhub`: PostgreSQL 17.11. Se mantiene la configuración de Docker como alternativa; no se modificó el servicio compartido ni sus credenciales. Las notas anteriores que indican que Docker estaba detenido describen su estado en el momento de esas comprobaciones, no el estado de la base local.
+
+## Validación visual de Bootstrap 00 — 2026-11-15
+
+La evidencia reproducible de esta ejecución está en `docs/evidence/validacion-visual-bootstrap-2026-11-15/`. Se conservaron los archivos no rastreados existentes y no se modificó PostgreSQL, otro proyecto ni el código de producto.
+
+### Preparación
+
+- Volumen del proyecto: `/Volumes/Server`, aproximadamente `552 GiB` libres al comenzar la ejecución de validación. Las herramientas y evidencias de trabajo permanecen bajo el proyecto, principalmente en `.local/` y `docs/evidence/`.
+- Versiones observadas: Node `22.23.4`, pnpm `11.0.8`, Xcode `27.0 (27A266a)`, Swift `6.4`, JDK `21.0.12`, Gradle local `8.11.1`, Android SDK Platform `35`, Build Tools `35.0.0` y adb `37.0.1`.
+- iOS: `xcrun simctl list runtimes` no lista runtimes instalados. Las entradas de dispositivos iOS aparecen como no disponibles. El intento específico `xcodebuild -downloadPlatform iOS -buildVersion 26.1 -architectureVariant arm64` encontró un runtime oficial de `8.32 GB`, pero solo descargó aproximadamente `47 MB` antes del timeout; no se instaló ningún runtime. iOS 26.0 no estaba disponible para descarga.
+- Android: adb no encontró dispositivos. El AVD disponible en el perfil del usuario está corrupto; no se modificó. La instalación de `emulator` y `system-images;android-35;google_apis;arm64-v8a` falló al obtener los manifiestos remotos por excepciones de red, así que no se creó un AVD dentro del proyecto.
+- CodeGraph no está instalado en el entorno (`gentle-ai` no existe); la inspección estructural se limitó a los archivos relevantes ya indicados por el plan.
+
+### Web
+
+- `pnpm install --frozen-lockfile`: correcto y sin cambios pendientes de instalación.
+- `pnpm lint`: correcto.
+- `pnpm build`: correcto con Next.js `16.4.6`.
+- `pnpm start` respondió `200 OK`. La inspección confirmó que el contenido actual sigue siendo la plantilla inicial de Next.js, no una pantalla de producto.
+- La inspección DOM observó cero errores de consola y ningún desbordamiento horizontal en el viewport disponible `1000×700`. La preferencia oscura y el contorno nativo de foco fueron observados; la secuencia completa de teclado no quedó validada.
+- No se pudieron producir capturas ni probar los tres tamaños solicitados porque el navegador integrado perdió la conexión y la sesión no tenía una herramienta local de captura. Detalle en `web/browser-dom-evidence.md`.
+- Reintento: el navegador volvió a cargar la aplicación y Lighthouse integrado terminó con `100/100` en accesibilidad, buenas prácticas y SEO; `browser.screenshot` siguió bloqueado por no haber una pestaña visible. Los informes están en `web/lighthouse-retry.json` y `web/lighthouse-retry.html`.
+- Segundo intento de captura: Brave headless no produjo PNG por `CVDisplayLinkCreateWithCGDisplay failed`; Brave GUI no permitió consultar la ventana por la restricción de accesibilidad de macOS (`-1719`). No se guardaron capturas falsas. El servidor temporal se cerró y el puerto 3000 quedó detenido.
+
+### iOS
+
+- `xcodebuild ... -sdk iphonesimulator ... -derivedDataPath "$PWD/.local/DerivedData/ios-validation" SYMROOT="$PWD/.local/DerivedData/ios-build-products" OBJROOT="$PWD/.local/DerivedData/ios-intermediates" CODE_SIGNING_ALLOWED=NO build`: correcto. El producto quedó en `.local/DerivedData/ios-build-products/Debug-iphonesimulator/EnergyHub.app`; la salida no usa las rutas compartidas observadas en los settings por defecto (`/Volumes/Server/XCode`).
+- `xcodebuild ... -destination "generic/platform=iOS Simulator" ... test`: no ejecutable; Xcode exige un dispositivo concreto para `EnergyHubTests` y no existe runtime para crear uno.
+- Reintento de runtime: iOS 26.1 fue localizable, pero su descarga de 8.32 GB fue cancelada por timeout tras aproximadamente 47 MB. Detalle en `ios/runtime-retry-summary.md`.
+- No se pudo instalar, abrir ni capturar la app. El texto disponible en el código es `EnergyHub Universal`; esto no equivale a una revisión visual ejecutada.
+
+### Android
+
+- `GRADLE_USER_HOME="$PWD/.local/gradle-home" .local/tools/gradle-8.11.1/bin/gradle -p apps/android :app:testDebugUnitTest :app:assembleDebug --console=plain`: correcto; las 41 tareas quedaron `UP-TO-DATE`, incluyendo `testDebugUnitTest` y `assembleDebug`.
+- La prueba unitaria existente ejecutó una sola comprobación y no es una prueba de interfaz.
+- El APK se construyó en `apps/android/app/build/outputs/apk/debug/app-debug.apk`, con paquete `com.energyhub.universal`, `minSdkVersion=26`, `targetSdkVersion=35`.
+- Sin emulador ni dispositivo, no se pudo instalar, abrir, revisar temas/barras/texto ampliado ni capturar la app. No se declara validación visual Android.
+- Reintento de herramientas: la descarga oficial del Emulator macOS arm64 se interrumpió por timeout; no se instaló un paquete parcial. Detalle en `android/runtime-retry-summary.md`.
+
+### Notion y cierre
+
+Se intentó acceder al enlace de Notion indicado; la recuperación solo devolvió la página de inicio de Notion y no existe en esta sesión una herramienta autenticada de edición. El plan no se marcó como actualizado. Este bloqueo queda también reflejado en `openspec/changes/validacion-visual-bootstrap/tasks.md`.

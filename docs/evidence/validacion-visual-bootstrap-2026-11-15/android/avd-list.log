@@ -1,0 +1,6 @@
+Available Android Virtual Devices:
+
+The following Android Virtual Devices could not be loaded:
+    Name: Pixel_9_Pro_XL
+    Path: <user>/.android/avd/Pixel_9_Pro_XL.ini
+   Error: Corrupted AVD ini file: <user>/.android/avd/Pixel_9_Pro_XL.ini

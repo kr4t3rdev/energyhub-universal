@@ -1,0 +1,29 @@
+v22.23.4
+11.0.8
+go version go1.27.1 darwin/arm64
+Xcode 27.0
+Build version 27A266a
+Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)
+Target: arm64-apple-macosx27.0.0
+openjdk version "21.0.12" 2026-07-21
+OpenJDK Runtime Environment Homebrew (build 21.0.12)
+OpenJDK 64-Bit Server VM Homebrew (build 21.0.12, mixed mode, sharing)
+
+------------------------------------------------------------
+Gradle 8.11.1
+------------------------------------------------------------
+
+Build time:    2024-11-20 16:56:46 UTC
+Revision:      481cb05a490e0ef9f8620f7873b83bd8a72e7c39
+
+Kotlin:        2.0.20
+Groovy:        3.0.22
+Ant:           Apache Ant(TM) version 1.10.14 compiled on August 16 2023
+Launcher JVM:  21.0.12 (Homebrew 21.0.12)
+Daemon JVM:    /opt/homebrew/Cellar/openjdk@21/21.0.12/libexec/openjdk.jdk/Contents/Home (no JDK specified, using current Java home)
+OS:            Mac OS X 27.0.1 aarch64
+
+Android Debug Bridge version 1.0.41
+Version 37.0.1-15733141
+Installed as /Volumes/Server/Proyectos/energyhub-universal/.local/android-sdk/platform-tools/adb
+Running on Darwin 27.0.0 (arm64)

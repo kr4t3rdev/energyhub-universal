@@ -1,0 +1,7 @@
+[24444:7872369:1115/145849.341026:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[24444:7872369:1115/145849.344090:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[24444:7872369:1115/145849.344195:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[24432:7872208:1115/145849.384267:ERROR:mojo/public/cpp/bindings/lib/interface_endpoint_client.cc:748] Message 2 rejected by interface blink.mojom.Widget
+[24432:7872208:1115/150206.232604:ERROR:brave/components/p3a/star_randomness_points.cc:120] StarRandomnessPoints: no response body for randomness request, net error: ERR_TIMED_OUT
+[24432:7872208:1115/150815.631800:ERROR:content/browser/gpu/gpu_process_host.cc:1056] GPU process exited unexpectedly: exit_code=15
+[24432:7872208:1115/150815.812338:ERROR:brave/components/p3a/star_randomness_points.cc:120] StarRandomnessPoints: no response body for randomness request, net error: ERR_FAILED

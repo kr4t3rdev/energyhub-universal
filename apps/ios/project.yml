@@ -1,0 +1,33 @@
+name: EnergyHub
+options:
+  bundleIdPrefix: com.energyhub
+  deploymentTarget:
+    iOS: "17.0"
+targets:
+  EnergyHub:
+    type: application
+    platform: iOS
+    sources: [EnergyHub]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.energyhub.universal
+        SWIFT_VERSION: "5.0"
+  EnergyHubTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [EnergyHubTests]
+    dependencies:
+      - target: EnergyHub
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.energyhub.universal.tests
+schemes:
+  EnergyHub:
+    build:
+      targets:
+        EnergyHub: all
+        EnergyHubTests: [test]
+    test:
+      targets: [EnergyHubTests]

@@ -1,0 +1,12 @@
+.local/
+node_modules/
+.next/
+.env
+.env.local
+.DS_Store
+.gradle/
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+local.properties

@@ -1,0 +1,5 @@
+    CONFIGURATION_BUILD_DIR = /Volumes/Server/XCode/Product/Debug-iphoneos
+    OBJROOT = /Volumes/Server/XCode/Intermediates
+    PRODUCT_BUNDLE_IDENTIFIER = com.energyhub.universal
+    SYMROOT = /Volumes/Server/XCode/Product
+    TARGET_BUILD_DIR = /Volumes/Server/XCode/Product/Debug-iphoneos

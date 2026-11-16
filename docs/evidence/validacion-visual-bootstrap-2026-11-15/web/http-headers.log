@@ -1,0 +1,16 @@
+HTTP/1.1 200 OK
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-prerender: 1
+link: </_next/static/media/07a39a8a4660cc7c-s.p.0r6juujl39pe6.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </_next/static/media/605ce01b664af129-s.p.0wgildi0cnwt9.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </next.svg>; rel=preload; as="image"
+x-nextjs-stale-time: 300
+X-Powered-By: Next.js
+Cache-Control: s-maxage=31536000
+ETag: "v52jfc2zdl965"
+Content-Type: text/html; charset=utf-8
+Content-Length: 11885
+Date: Sun, 15 Nov 2026 18:15:29 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
