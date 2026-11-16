@@ -1,3 +1,5 @@
 ?   	energyhub-universal/backend/cmd/api	[no test files]
+ok  	energyhub-universal/backend/internal/authz	0.340s
 ok  	energyhub-universal/backend/internal/contracts	(cached)
 ok  	energyhub-universal/backend/internal/platform/httpapi	(cached)
+ok  	energyhub-universal/backend/internal/site	(cached)

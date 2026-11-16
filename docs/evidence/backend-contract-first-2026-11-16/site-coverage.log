@@ -1,0 +1,7 @@
+energyhub-universal/backend/internal/site/service.go:24:	valid		100.0%
+energyhub-universal/backend/internal/site/service.go:41:	NewService	100.0%
+energyhub-universal/backend/internal/site/service.go:45:	ListSites	100.0%
+energyhub-universal/backend/internal/site/service.go:57:	GetOverview	80.0%
+energyhub-universal/backend/internal/site/service.go:68:	ListDevices	62.5%
+energyhub-universal/backend/internal/site/service.go:83:	validate	100.0%
+total:								(statements)	84.6%

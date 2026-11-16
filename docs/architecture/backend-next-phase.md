@@ -52,6 +52,10 @@ Todos requieren `bearerAuth`. Las respuestas de error comparten `code`, `message
 
 Los modelos Go correspondientes están en `backend/internal/contracts/overview.go`. Sus pruebas de serialización cubren `null` para lecturas/fechas ausentes, el sobre de errores y las respuestas de listas. El paquete no registra rutas ni resuelve identidad: es una representación de contrato para la siguiente implementación.
 
+La frontera de aplicación está en `backend/internal/site/service.go`: recibe un `Scope` con `organizationID` y `subject`, exige ambos antes de tocar el reader y obliga al puerto tenant-aware a recibir `organizationID` en cada operación. Sigue sin autenticar el subject; esa responsabilidad queda en el middleware futuro.
+
+La conversión de una identidad ya verificada a ese scope está en `backend/internal/authz/scope.go`. `ScopeForOrganization` solo acepta una organización presente en las membresías del principal y rechaza subject ausente, organización inválida o pertenencia desconocida. No verifica JWT: esa entrada queda reservada para el proveedor OIDC futuro.
+
 ## Puerta de entrada antes de datos reales
 
 No se implementará el adaptador HTTP ni se sustituirá la fixture hasta disponer de:
@@ -69,4 +73,6 @@ No se implementará el adaptador HTTP ni se sustituirá la fixture hasta dispone
 - RED: `go test ./internal/contracts` no compiló antes de crear los modelos.
 - GREEN: `go test ./...` pasa; `go vet ./...` y `go build ./...` también pasan.
 - Las pruebas están en `backend/internal/contracts/overview_test.go`.
+- La frontera tenant-aware pasa `go test ./internal/site` con 84.6% de cobertura.
+- La autorización de pertenencia pasa `go test ./internal/authz` con 100% de cobertura.
 - Los logs reproducibles están en `docs/evidence/backend-contract-first-2026-11-16/`.
