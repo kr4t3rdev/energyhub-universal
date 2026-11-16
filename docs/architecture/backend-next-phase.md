@@ -56,6 +56,8 @@ La frontera de aplicación está en `backend/internal/site/service.go`: recibe u
 
 La conversión de una identidad ya verificada a ese scope está en `backend/internal/authz/scope.go`. `ScopeForOrganization` solo acepta una organización presente en las membresías del principal y rechaza subject ausente, organización inválida o pertenencia desconocida. No verifica JWT: esa entrada queda reservada para el proveedor OIDC futuro.
 
+La extracción de credenciales está aislada en `backend/internal/authn/bearer.go`. `BearerToken` acepta exactamente un header Bearer y no registra ni valida su contenido; `Verifier` queda como puerto para una implementación OIDC/JWT posterior.
+
 ## Puerta de entrada antes de datos reales
 
 No se implementará el adaptador HTTP ni se sustituirá la fixture hasta disponer de:
@@ -75,4 +77,5 @@ No se implementará el adaptador HTTP ni se sustituirá la fixture hasta dispone
 - Las pruebas están en `backend/internal/contracts/overview_test.go`.
 - La frontera tenant-aware pasa `go test ./internal/site` con 84.6% de cobertura.
 - La autorización de pertenencia pasa `go test ./internal/authz` con 100% de cobertura.
+- La extracción Bearer pasa `go test ./internal/authn` con 100% de cobertura.
 - Los logs reproducibles están en `docs/evidence/backend-contract-first-2026-11-16/`.

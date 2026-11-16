@@ -1,0 +1,10 @@
+mode: set
+energyhub-universal/backend/internal/authn/bearer.go:27.2,27.20 1 1
+energyhub-universal/backend/internal/authn/bearer.go:28.3,29.1 1 1
+energyhub-universal/backend/internal/authn/bearer.go:31.2,32.22 2 1
+energyhub-universal/backend/internal/authn/bearer.go:33.3,34.1 1 1
+energyhub-universal/backend/internal/authn/bearer.go:35.2,35.22 1 1
+energyhub-universal/backend/internal/authn/bearer.go:36.3,37.1 1 1
+energyhub-universal/backend/internal/authn/bearer.go:39.2,40.84 2 1
+energyhub-universal/backend/internal/authn/bearer.go:41.3,42.1 1 1
+energyhub-universal/backend/internal/authn/bearer.go:43.2,43.23 1 1
