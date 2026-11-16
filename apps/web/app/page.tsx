@@ -1,69 +1,94 @@
-import Image from "next/image";
+import { connection } from "next/server";
+import { Suspense } from "react";
+import { siteOverviewProvider } from "./site/provider";
+import { formatReading, freshnessLabel } from "./site/presentation";
 
-export default function Home() {
+async function SiteMeta({ updatedAt }: { updatedAt: string | null }) {
+  await connection();
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="site-meta">
+      <span className="meta-dot" /> Ejemplo estático <span className="meta-divider">/</span>{" "}
+      {freshnessLabel(updatedAt, new Date())}
+    </div>
+  );
+}
+
+export default async function Home() {
+  const site = await siteOverviewProvider.getSiteOverview();
+  const { readings, devices } = site;
+
+  return (
+    <div className="app-shell">
+      <a className="skip-link" href="#contenido">Saltar al contenido</a>
+      <header className="header">
+        <a href="#inicio" className="brand">
+          <span className="brand-mark" aria-hidden="true">E<span>↗</span></span>
+          <span>energyhub<small>UNIVERSAL</small></span>
+        </a>
+        <nav aria-label="Navegación principal">
+          <a className="nav-active" href="#inicio">Vista general</a>
+          <a href="#dispositivos">Dispositivos</a>
+          <a href="#acerca">Acerca de</a>
+        </nav>
+        <span className="header-tag"><span className="status-dot" /> MODO DEMO</span>
+      </header>
+
+      <main id="contenido">
+        <section className="intro container" id="inicio">
+          <div>
+            <p className="eyebrow"><span className="status-dot" /> TU ENERGÍA, EN CONTEXTO</p>
+            <h1>Una mirada más clara<br /><em>a tu energía.</em></h1>
+            <p className="intro-copy">Un espacio para entender tu instalación, reunir la información importante y ver todo con perspectiva.</p>
+          </div>
+          <div className="intro-index" aria-hidden="true"><span>01 / 03</span><span>ENERGY<br />OVERVIEW</span></div>
+        </section>
+
+        <section className="dashboard container" aria-labelledby="site-title">
+          <div className="demo-banner">
+            <span className="demo-icon" aria-hidden="true">✳</span>
+            <div><strong>Estás explorando una demostración</strong><p>Todos los valores de esta pantalla son datos de ejemplo. No hay equipos conectados.</p></div>
+            <span className="demo-label">DATOS DE EJEMPLO</span>
+          </div>
+
+          <div className="section-heading">
+            <div><p className="eyebrow muted">INSTALACIÓN / EJEMPLO</p><h2 id="site-title">{site.name}</h2><p>Una vista general de cómo se organizará tu información energética.</p></div>
+            <Suspense fallback={<div className="site-meta"><span className="meta-dot" /> Ejemplo estático <span className="meta-divider">/</span> Sin datos disponibles</div>}>
+              <SiteMeta updatedAt={site.updatedAt} />
+            </Suspense>
+          </div>
+
+          <div className="metrics">
+            {readings.map((reading, index) => (
+              <article className={`metric metric-${index + 1}`} key={reading.label}>
+                <div className="metric-top"><span>{reading.label}</span><span aria-hidden="true">{reading.icon}</span></div>
+                <p className="metric-value">{formatReading(reading.value, reading.unit)}</p>
+                <p className="metric-note">{reading.note}</p>
+                <span className="metric-number">0{index + 1}</span>
+              </article>
+            ))}
+          </div>
+
+          <div className="lower-grid">
+            <section className="devices-panel" id="dispositivos" aria-labelledby="devices-title">
+              <div className="panel-header"><div><p className="eyebrow muted">TU INSTALACIÓN</p><h2 id="devices-title">Dispositivos</h2></div><span className="count">{devices.length.toString().padStart(2, "0")}</span></div>
+              <div className="empty-state">
+                <div className="empty-symbol" aria-hidden="true"><span>＋</span></div>
+                <div><h3>Aún no hay dispositivos</h3><p>Cuando la conexión esté disponible, aquí podrás consultar los equipos de tu instalación.</p></div>
+              </div>
+              <p className="panel-footnote"><span aria-hidden="true">↗</span> La incorporación de equipos desde el móvil llegará en una fase posterior.</p>
+            </section>
+
+            <aside className="note-panel" id="acerca" aria-labelledby="note-title">
+              <span className="note-spark" aria-hidden="true">✳</span>
+              <p className="eyebrow">HECHO PARA DARTE CLARIDAD</p>
+              <h2 id="note-title">Cada dato<br /><em>en su lugar.</em></h2>
+              <p>EnergyHub Universal está en desarrollo. Esta primera vista es una propuesta visual, no una conexión con equipos reales.</p>
+              <span className="note-bottom">ENERGYHUB UNIVERSAL <span>↗</span></span>
+            </aside>
+          </div>
+        </section>
       </main>
+      <footer className="footer container"><span>© EnergyHub Universal</span><span>UNA NUEVA PERSPECTIVA PARA TU ENERGÍA <span aria-hidden="true">✳</span></span><span>PROYECTO EN DESARROLLO</span></footer>
     </div>
   );
 }

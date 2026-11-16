@@ -1,0 +1,63 @@
+# Diseño de la siguiente fase backend
+
+Estado: propuesta de diseño. No implementa autenticación, endpoints de datos ni acceso a PostgreSQL.
+
+## Límites de la entrega actual
+
+- `GET /health` sigue siendo únicamente una señal de vida del proceso.
+- La web consume `FixtureSiteOverviewProvider`; no hace peticiones al backend.
+- No se muestra información de usuarios, organizaciones, dispositivos reales ni telemetría.
+- El contrato propuesto en `contracts/openapi/next-phase-proposal.yaml` es un artefacto de diseño y no declara disponibilidad de esos endpoints.
+
+## Autenticación propuesta
+
+1. Usar un proveedor OIDC compatible con OAuth 2.1; el proveedor concreto queda por decidir.
+2. Los clientes obtienen un access token de corta duración y lo envían como `Authorization: Bearer <token>`.
+3. Go valida firma mediante JWKS cacheado, `iss`, `aud`, `exp`, `nbf` y `sub`. Un token inválido o ausente produce `401`; no se debe consultar la base de datos antes de esa validación.
+4. El backend no aceptará `organization_id`, `tenant_id` ni roles desde cabeceras controladas por el cliente. La pertenencia y el rol se resolverán en el servidor.
+5. Refresh tokens, si se usan, permanecen bajo control del proveedor y de los clientes nativos; nunca se almacenan en PostgreSQL como texto legible.
+6. Los logs deben incluir un identificador de correlación y el sujeto anonimizado; nunca tokens, cookies ni datos energéticos completos.
+
+## Aislamiento por organización
+
+- Cada recurso de negocio persistido tendrá `organization_id NOT NULL`.
+- La autorización se comprobará en cada caso de uso: `subject -> organization membership -> resource`.
+- Las consultas siempre filtrarán por `organization_id` y por el identificador del recurso. No habrá consultas por `site_id` global sin el ámbito de organización.
+- La capa de repositorio recibirá el contexto autorizado, no un tenant elegido libremente por la UI.
+- Se recomienda activar RLS como defensa adicional cuando se introduzca PostgreSQL, con una transacción que establezca el contexto autorizado. RLS no sustituye la autorización en Go.
+- Respuestas para una organización inexistente o un recurso ajeno deben evitar filtrar su existencia; según el caso se responderá `403` o `404` de forma consistente.
+- Roles iniciales propuestos: `owner`, `admin`, `member`, `viewer`. El contrato de permisos deberá aprobarse antes de crear invitaciones o mutaciones.
+
+## Datos que necesita la primera vista
+
+La pantalla solo necesita un resumen agregado, no credenciales de fabricante ni el historial completo:
+
+- instalación: `id`, `name`, `timezone`;
+- lecturas: `label`, `value` nullable, `unit`, `measuredAt`, `freshness` derivable;
+- dispositivos: `id`, `name`, `kind`, `status` nullable;
+- metadatos: `updatedAt` nullable y, si se acuerda, `source`/`quality`.
+
+`measuredAt` y `updatedAt` deben ser ISO 8601 UTC. Un valor ausente se representa como `null`; el cliente mostrará `—` o «Sin datos disponibles» y nunca inferirá cero, apagado, ahorro o autonomía.
+
+## Contratos OpenAPI propuestos
+
+El contrato de diseño contiene únicamente:
+
+- `GET /v1/me` para confirmar el sujeto y sus organizaciones autorizadas;
+- `GET /v1/organizations/{organizationId}/sites` para listar instalaciones visibles;
+- `GET /v1/organizations/{organizationId}/sites/{siteId}/overview` para la primera pantalla;
+- `GET /v1/organizations/{organizationId}/sites/{siteId}/devices` para una futura pantalla dedicada.
+
+Todos requieren `bearerAuth`. Las respuestas de error comparten `code`, `message`, `requestId` y detalles opcionales. No se añade un endpoint de telemetría ni mutaciones hasta acordar retención, permisos, origen de datos, paginación y límites.
+
+## Puerta de entrada antes de datos reales
+
+No se implementará el adaptador HTTP ni se sustituirá la fixture hasta disponer de:
+
+1. proveedor OIDC y configuración de `issuer`/`audience`;
+2. matriz de roles y política de pertenencia;
+3. migraciones con claves y restricciones de organización;
+4. contrato OpenAPI revisado y pruebas de contrato;
+5. estrategia de errores, rate limiting, auditoría y observabilidad;
+6. pruebas de autorización que intenten cruzar organizaciones;
+7. decisión sobre retención y calidad de telemetría.

@@ -1,0 +1,224 @@
+openapi: 3.1.0
+info:
+  title: EnergyHub Universal API — next phase proposal
+  version: 0.2.0-proposed
+  description: |
+    Diseño no implementado para la primera lectura autenticada de instalaciones.
+    /health sigue siendo solo liveness y no forma parte de estos datos.
+  x-status: proposed
+paths:
+  /v1/me:
+    get:
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Subject y organizaciones visibles para el usuario autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/organizations/{organizationId}/sites:
+    get:
+      operationId: listSites
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      responses:
+        '200':
+          description: Instalaciones visibles dentro de la organización autorizada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SiteSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/organizations/{organizationId}/sites/{siteId}/overview:
+    get:
+      operationId: getSiteOverview
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/SiteId'
+      responses:
+        '200':
+          description: Resumen agregado de una instalación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteOverview'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/organizations/{organizationId}/sites/{siteId}/devices:
+    get:
+      operationId: listSiteDevices
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/SiteId'
+      responses:
+        '200':
+          description: Dispositivos conocidos de una instalación
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeviceSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    OrganizationId:
+      name: organizationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SiteId:
+      name: siteId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Unauthorized:
+      description: Token ausente, inválido o expirado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: El subject no tiene acceso a la organización
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Recurso no visible o inexistente
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    CurrentUser:
+      type: object
+      required: [subject, organizations]
+      properties:
+        subject:
+          type: string
+        organizations:
+          type: array
+          items:
+            type: object
+            required: [id, name, role]
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              role:
+                type: string
+                enum: [owner, admin, member, viewer]
+    SiteSummary:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        timezone:
+          type: string
+    SiteOverview:
+      type: object
+      required: [site, readings, devices, updatedAt]
+      properties:
+        site:
+          $ref: '#/components/schemas/SiteSummary'
+        readings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReadingSummary'
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeviceSummary'
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+    ReadingSummary:
+      type: object
+      required: [label, value, unit, measuredAt]
+      properties:
+        label:
+          type: string
+        value:
+          type: number
+          nullable: true
+        unit:
+          type: string
+        measuredAt:
+          type: string
+          format: date-time
+          nullable: true
+    DeviceSummary:
+      type: object
+      required: [id, name, kind, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        kind:
+          type: string
+        status:
+          type: string
+          nullable: true
+    ErrorResponse:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string

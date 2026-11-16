@@ -1,0 +1,24 @@
+
+ RUN  v5.1.0 /Volumes/Server/Proyectos/energyhub-universal/apps/web
+      Coverage enabled with v8
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  04:35:53
+   Duration  254ms (tests 61%, worker 18%, import 15%, transform 6%)
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-----------------|---------|----------|---------|---------|-------------------
+File             | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+-----------------|---------|----------|---------|---------|-------------------
+All files        |     100 |    95.83 |     100 |     100 |
+ presentation.ts |     100 |    95.83 |     100 |     100 | 34
+-----------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 21/21 )
+Branches     : 95.83% ( 23/24 )
+Functions    : 100% ( 3/3 )
+Lines        : 100% ( 16/16 )
+================================================================================

@@ -29,3 +29,7 @@ Las descargas pueden ser grandes o lentas; comprobar espacio, disponibilidad y o
 ## Entregables y aceptación
 
 El cambio queda completo solo cuando cada plataforma tiene resultado trazable (aprobada o incidencia resuelta), capturas y entorno registrados; una plataforma bloqueada mantiene abierto el cambio. Ver [tareas](tasks.md) y [especificación](specs/validacion-visual/spec.md). Sin publicar ni hacer push. No crear commit salvo autorización expresa o instrucciones vigentes aplicables.
+
+## Decisión posterior del usuario — 2026-11-15
+
+La preparación inicial se da por cerrada administrativamente. Las pruebas de iOS y Android se realizarán en teléfonos físicos más adelante; no fueron ejecutadas ni se afirman aprobadas. La revisión visual web pendiente pasa a `../implementacion-web-inicial/tasks.md`. La actualización de Notion permanece pendiente mientras el conector no esté disponible. Esta decisión reemplaza la condición de mantener abierta esta preparación por falta de simuladores, sin alterar el historial de evidencias.

@@ -1,0 +1,16 @@
+$ next dev
+▲ Next.js 16.4.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.184.129:3000
+✓ Ready in 544ms
+✓ Running next.config.ts took 174ms
+- Cache Components enabled
+- Partial Prefetching enabled
+
+ GET / 200 in 369ms (next.js: 175ms, application-code: 194ms)
+Route /_not-found is rendering with server caches disabled. For this navigation, Component Metadata in React DevTools will not accurately reflect what is statically prerenderable and runtime prefetchable. See more info here: https://nextjs.org/docs/messages/cache-bypass-in-dev
+ GET /robots.txt 404 in 266ms (next.js: 232ms, application-code: 34ms)
+✓ Compiled in 263ms
+ GET / 200 in 84ms (next.js: 5ms, application-code: 79ms)
+ GET /robots.txt 404 in 67ms (next.js: 12ms, application-code: 55ms)
+[?25h

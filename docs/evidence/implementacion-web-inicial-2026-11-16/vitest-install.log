@@ -1,0 +1,62 @@
+Progress: resolved 1, reused 0, downloaded 0, added 0
+[WARN] deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+Progress: resolved 75, reused 75, downloaded 0, added 0
+[WARN] Request took 12823ms: https://registry.npmjs.org/@next%2Fswc-darwin-x64
+Progress: resolved 76, reused 75, downloaded 0, added 0
+[WARN] Request took 24215ms: https://registry.npmjs.org/@next%2Fswc-linux-arm64-gnu
+Progress: resolved 77, reused 75, downloaded 0, added 0
+[WARN] Request took 45463ms: https://registry.npmjs.org/@next%2Fswc-linux-arm64-musl
+Progress: resolved 78, reused 75, downloaded 0, added 0
+[WARN] Request took 12618ms: https://registry.npmjs.org/@next%2Fswc-linux-x64-gnu
+Progress: resolved 79, reused 75, downloaded 0, added 0
+Progress: resolved 80, reused 75, downloaded 0, added 0
+[WARN] Request took 29544ms: https://registry.npmjs.org/@next%2Fswc-win32-arm64-msvc
+Progress: resolved 81, reused 75, downloaded 0, added 0
+[WARN] Request took 19493ms: https://registry.npmjs.org/@next%2Fswc-win32-x64-msvc
+Progress: resolved 82, reused 75, downloaded 0, added 0
+Progress: resolved 103, reused 96, downloaded 0, added 0
+[WARN] Request took 20315ms: https://registry.npmjs.org/@tailwindcss%2Foxide-linux-arm64-musl
+Progress: resolved 104, reused 96, downloaded 0, added 0
+[WARN] Request took 10972ms: https://registry.npmjs.org/@tailwindcss%2Foxide-linux-arm64-gnu
+Progress: resolved 105, reused 96, downloaded 0, added 0
+Progress: resolved 106, reused 96, downloaded 0, added 0
+Progress: resolved 107, reused 96, downloaded 0, added 0
+Progress: resolved 108, reused 96, downloaded 0, added 0
+[WARN] Request took 10786ms: https://registry.npmjs.org/@tailwindcss%2Foxide-freebsd-x64
+Progress: resolved 109, reused 96, downloaded 0, added 0
+Progress: resolved 110, reused 96, downloaded 0, added 0
+[WARN] Request took 10929ms: https://registry.npmjs.org/@tailwindcss%2Foxide-win32-x64-msvc
+Progress: resolved 111, reused 96, downloaded 0, added 0
+Progress: resolved 112, reused 96, downloaded 0, added 0
+Progress: resolved 113, reused 96, downloaded 0, added 0
+Progress: resolved 154, reused 132, downloaded 0, added 0
+Progress: resolved 203, reused 181, downloaded 0, added 0
+Progress: resolved 207, reused 181, downloaded 0, added 0
+Progress: resolved 208, reused 181, downloaded 0, added 0
+Progress: resolved 209, reused 181, downloaded 0, added 0
+Progress: resolved 210, reused 181, downloaded 0, added 0
+Progress: resolved 212, reused 181, downloaded 0, added 0
+Progress: resolved 214, reused 181, downloaded 0, added 0
+Progress: resolved 216, reused 181, downloaded 0, added 0
+Progress: resolved 217, reused 181, downloaded 0, added 0
+Progress: resolved 218, reused 181, downloaded 0, added 0
+Progress: resolved 220, reused 181, downloaded 0, added 0
+Progress: resolved 269, reused 218, downloaded 0, added 0
+Progress: resolved 272, reused 218, downloaded 0, added 0
+Progress: resolved 275, reused 218, downloaded 0, added 0
+Progress: resolved 276, reused 218, downloaded 0, added 0
+Progress: resolved 277, reused 218, downloaded 0, added 0
+Progress: resolved 280, reused 218, downloaded 0, added 0
+Progress: resolved 283, reused 218, downloaded 0, added 0
+Progress: resolved 286, reused 218, downloaded 0, added 0
+Progress: resolved 481, reused 385, downloaded 0, added 0
+Packages: +25
++++++++++++++++++++++++++
+Progress: resolved 481, reused 385, downloaded 0, added 1
+Progress: resolved 481, reused 385, downloaded 0, added 25, done
+[WARN] Issues with peer dependencies found. Run "pnpm peers check" to list them.
+
+devDependencies:
++ vitest 5.1.0
+
+Done in 4m 23s using pnpm v11.0.8

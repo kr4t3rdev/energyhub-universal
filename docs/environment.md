@@ -140,3 +140,19 @@ La evidencia reproducible de esta ejecución está en `docs/evidence/validacion-
 ### Notion y cierre
 
 Se intentó acceder al enlace de Notion indicado; la recuperación solo devolvió la página de inicio de Notion y no existe en esta sesión una herramienta autenticada de edición. El plan no se marcó como actualizado. Este bloqueo queda también reflejado en `openspec/changes/validacion-visual-bootstrap/tasks.md`.
+
+## Implementación web inicial — 2026-11-16
+
+La web se verificó desde `/Volumes/Server/Proyectos/energyhub-universal/apps/web` con Node 22.23.4 y pnpm 11.0.8. Se añadió Vitest 5.1.0 y `@vitest/coverage-v8` 5.1.0; el lockfile de `apps/web` quedó actualizado.
+
+- `pnpm test`: 12/12 pruebas.
+- `pnpm exec vitest run --coverage`: statements 100%, branches 95.83%, functions 100%, lines 100%.
+- `pnpm exec tsc --noEmit`: correcto.
+- `pnpm lint`: correcto.
+- `pnpm build`: correcto; Next.js 16.4.6 produjo `/` como prerender parcial con el metadato de antigüedad en streaming dentro de `Suspense`.
+- Revisión del navegador integrado: viewports 366×812 y 1096×1265, sin overflow horizontal, consola sin errores, teclado con skip link y foco visible.
+- Lighthouse final en móvil y escritorio: accesibilidad 100, buenas prácticas 100, SEO 100.
+
+La evidencia está en `docs/evidence/implementacion-web-inicial-2026-11-16/`. Las pruebas en teléfonos físicos siguen pendientes. La actualización del plan maestro de Notion se confirmó al cierre de esta ejecución; los intentos anteriores fallaron con `ECONNRESET`.
+
+La separación pantalla–datos está en `apps/web/app/site/provider.ts`; la fixture sintética está en `example.ts`; los tipos de lecturas, dispositivos y frescura están en `types.ts`. La siguiente fase backend está diseñada, sin implementación, en `docs/architecture/backend-next-phase.md` y `contracts/openapi/next-phase-proposal.yaml`.

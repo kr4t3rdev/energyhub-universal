@@ -1,0 +1,173 @@
+
+ RUN  v5.1.0 /Volumes/Server/Proyectos/energyhub-universal
+
+ ❯ .local/home/Library/pnpm/store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts (12 tests | 9 failed) 35ms
+   ❯ readingFreshness (5)
+     × marca ausencia cuando no hay fecha o no es válida 2ms
+     × marca fresca dentro del umbral 0ms
+     × marca obsoleta fuera del umbral 0ms
+     × tolera relojes ligeramente adelantados 0ms
+     × usa el umbral personalizado 0ms
+   ❯ freshnessLabel (4)
+     × explica la ausencia de datos sin inventarlos 0ms
+     × describe una lectura reciente 0ms
+     × usa horas cuando la antigüedad supera una hora 0ms
+     × avisa cuando la lectura está desactualizada 0ms
+ ❯ .local/pnpm-store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts (12 tests | 9 failed) 34ms
+   ❯ readingFreshness (5)
+     × marca ausencia cuando no hay fecha o no es válida 2ms
+     × marca fresca dentro del umbral 0ms
+     × marca obsoleta fuera del umbral 0ms
+     × tolera relojes ligeramente adelantados 0ms
+     × usa el umbral personalizado 0ms
+   ❯ freshnessLabel (4)
+     × explica la ausencia de datos sin inventarlos 0ms
+     × describe una lectura reciente 0ms
+     × usa horas cuando la antigüedad supera una hora 0ms
+     × avisa cuando la lectura está desactualizada 0ms
+ ❯ apps/web/app/site/presentation.test.ts (12 tests | 9 failed) 35ms
+   ❯ readingFreshness (5)
+     × marca ausencia cuando no hay fecha o no es válida 2ms
+     × marca fresca dentro del umbral 0ms
+     × marca obsoleta fuera del umbral 0ms
+     × tolera relojes ligeramente adelantados 0ms
+     × usa el umbral personalizado 0ms
+   ❯ freshnessLabel (4)
+     × explica la ausencia de datos sin inventarlos 0ms
+     × describe una lectura reciente 0ms
+     × usa horas cuando la antigüedad supera una hora 0ms
+     × avisa cuando la lectura está desactualizada 0ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 27 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  apps/web/app/site/presentation.test.ts > readingFreshness > marca ausencia cuando no hay fecha o no es válida
+ FAIL  .local/pnpm-store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > readingFreshness > marca ausencia cuando no hay fecha o no es válida
+ FAIL  .local/home/Library/pnpm/store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > readingFreshness > marca ausencia cuando no hay fecha o no es válida
+TypeError: readingFreshness is not a function
+ ❯ apps/web/app/site/presentation.test.ts:24:12
+     22|
+     23|   it("marca ausencia cuando no hay fecha o no es válida", () => {
+     24|     expect(readingFreshness(null, now)).toBe("missing");
+       |            ^
+     25|     expect(readingFreshness("no-es-fecha", now)).toBe("missing");
+     26|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/27]⎯
+
+ FAIL  apps/web/app/site/presentation.test.ts > readingFreshness > marca fresca dentro del umbral
+ FAIL  .local/pnpm-store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > readingFreshness > marca fresca dentro del umbral
+ FAIL  .local/home/Library/pnpm/store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > readingFreshness > marca fresca dentro del umbral
+TypeError: readingFreshness is not a function
+ ❯ apps/web/app/site/presentation.test.ts:29:12
+     27|
+     28|   it("marca fresca dentro del umbral", () => {
+     29|     expect(readingFreshness("2026-11-16T11:45:00Z", now)).toBe("fresh"…
+       |            ^
+     30|   });
+     31|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/27]⎯
+
+ FAIL  apps/web/app/site/presentation.test.ts > readingFreshness > marca obsoleta fuera del umbral
+ FAIL  .local/pnpm-store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > readingFreshness > marca obsoleta fuera del umbral
+ FAIL  .local/home/Library/pnpm/store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > readingFreshness > marca obsoleta fuera del umbral
+TypeError: readingFreshness is not a function
+ ❯ apps/web/app/site/presentation.test.ts:33:12
+     31|
+     32|   it("marca obsoleta fuera del umbral", () => {
+     33|     expect(readingFreshness("2026-11-16T10:00:00Z", now)).toBe("stale"…
+       |            ^
+     34|   });
+     35|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/27]⎯
+
+ FAIL  apps/web/app/site/presentation.test.ts > readingFreshness > tolera relojes ligeramente adelantados
+ FAIL  .local/pnpm-store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > readingFreshness > tolera relojes ligeramente adelantados
+ FAIL  .local/home/Library/pnpm/store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > readingFreshness > tolera relojes ligeramente adelantados
+TypeError: readingFreshness is not a function
+ ❯ apps/web/app/site/presentation.test.ts:37:12
+     35|
+     36|   it("tolera relojes ligeramente adelantados", () => {
+     37|     expect(readingFreshness("2026-11-16T12:01:00Z", now)).toBe("fresh"…
+       |            ^
+     38|   });
+     39|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/27]⎯
+
+ FAIL  apps/web/app/site/presentation.test.ts > readingFreshness > usa el umbral personalizado
+ FAIL  .local/pnpm-store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > readingFreshness > usa el umbral personalizado
+ FAIL  .local/home/Library/pnpm/store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > readingFreshness > usa el umbral personalizado
+TypeError: readingFreshness is not a function
+ ❯ apps/web/app/site/presentation.test.ts:41:12
+     39|
+     40|   it("usa el umbral personalizado", () => {
+     41|     expect(readingFreshness("2026-11-16T11:00:00Z", now, 90)).toBe("fr…
+       |            ^
+     42|     expect(readingFreshness("2026-11-16T11:00:00Z", now, 30)).toBe("st…
+     43|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/27]⎯
+
+ FAIL  apps/web/app/site/presentation.test.ts > freshnessLabel > explica la ausencia de datos sin inventarlos
+ FAIL  .local/pnpm-store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > freshnessLabel > explica la ausencia de datos sin inventarlos
+ FAIL  .local/home/Library/pnpm/store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > freshnessLabel > explica la ausencia de datos sin inventarlos
+TypeError: freshnessLabel is not a function
+ ❯ apps/web/app/site/presentation.test.ts:50:12
+     48|
+     49|   it("explica la ausencia de datos sin inventarlos", () => {
+     50|     expect(freshnessLabel(null, now)).toBe("Sin datos disponibles");
+       |            ^
+     51|   });
+     52|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/27]⎯
+
+ FAIL  apps/web/app/site/presentation.test.ts > freshnessLabel > describe una lectura reciente
+ FAIL  .local/pnpm-store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > freshnessLabel > describe una lectura reciente
+ FAIL  .local/home/Library/pnpm/store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > freshnessLabel > describe una lectura reciente
+TypeError: freshnessLabel is not a function
+ ❯ apps/web/app/site/presentation.test.ts:54:12
+     52|
+     53|   it("describe una lectura reciente", () => {
+     54|     expect(freshnessLabel("2026-11-16T11:55:00Z", now)).toBe("Actualiz…
+       |            ^
+     55|   });
+     56|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/27]⎯
+
+ FAIL  apps/web/app/site/presentation.test.ts > freshnessLabel > usa horas cuando la antigüedad supera una hora
+ FAIL  .local/pnpm-store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > freshnessLabel > usa horas cuando la antigüedad supera una hora
+ FAIL  .local/home/Library/pnpm/store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > freshnessLabel > usa horas cuando la antigüedad supera una hora
+TypeError: freshnessLabel is not a function
+ ❯ apps/web/app/site/presentation.test.ts:58:12
+     56|
+     57|   it("usa horas cuando la antigüedad supera una hora", () => {
+     58|     expect(freshnessLabel("2026-11-16T09:30:00Z", now, 180)).toBe("Act…
+       |            ^
+     59|   });
+     60|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/27]⎯
+
+ FAIL  apps/web/app/site/presentation.test.ts > freshnessLabel > avisa cuando la lectura está desactualizada
+ FAIL  .local/pnpm-store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > freshnessLabel > avisa cuando la lectura está desactualizada
+ FAIL  .local/home/Library/pnpm/store/v11/projects/f87485540426bec992f213e528a649a2/app/site/presentation.test.ts > freshnessLabel > avisa cuando la lectura está desactualizada
+TypeError: freshnessLabel is not a function
+ ❯ apps/web/app/site/presentation.test.ts:62:12
+     60|
+     61|   it("avisa cuando la lectura está desactualizada", () => {
+     62|     expect(freshnessLabel("2026-11-16T09:00:00Z", now)).toBe("Datos de…
+       |            ^
+     63|   });
+     64| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/27]⎯
+
+
+ Test Files  3 failed (3)
+      Tests  27 failed | 9 passed (36)
+   Start at  00:33:38
+   Duration  290ms (tests 54%, transform 28%, import 12%, worker 5%)

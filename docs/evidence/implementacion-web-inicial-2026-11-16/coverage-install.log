@@ -1,0 +1,21 @@
+Progress: resolved 1, reused 0, downloaded 0, added 0
+[WARN] deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+Progress: resolved 15, reused 14, downloaded 1, added 0
+Progress: resolved 19, reused 14, downloaded 1, added 0
+Progress: resolved 20, reused 14, downloaded 1, added 0
+Progress: resolved 96, reused 82, downloaded 1, added 0
+Progress: resolved 97, reused 82, downloaded 1, added 0
+Progress: resolved 238, reused 189, downloaded 1, added 0
+Progress: resolved 450, reused 371, downloaded 2, added 0
+Progress: resolved 487, reused 383, downloaded 5, added 0
+[WARN] Tarball download average speed 16 KiB/s (size 83 KiB) is below 50 KiB/s: https://registry.npmjs.org/@vitest/istanbul-lib-report/-/istanbul-lib-report-2.1.0.tgz (GET)
+Progress: resolved 487, reused 383, downloaded 6, added 0
+Packages: +9 -1
++++++++++-
+Progress: resolved 489, reused 385, downloaded 8, added 9, done
+[WARN] Issues with peer dependencies found. Run "pnpm peers check" to list them.
+
+devDependencies:
++ @vitest/coverage-v8 5.1.0
+
+Done in 16.8s using pnpm v11.0.8
