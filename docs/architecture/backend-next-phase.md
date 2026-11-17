@@ -54,7 +54,7 @@ Los modelos Go correspondientes están en `backend/internal/contracts/overview.g
 
 La frontera de aplicación está en `backend/internal/site/service.go`: recibe un `Scope` con `organizationID` y `subject`, exige ambos antes de tocar el reader y obliga al puerto tenant-aware a recibir `organizationID` en cada operación. Sigue sin autenticar el subject; esa responsabilidad queda en el middleware futuro.
 
-La conversión de una identidad ya verificada a ese scope está en `backend/internal/authz/scope.go`. `ScopeForOrganization` solo acepta una organización presente en las membresías del principal y rechaza subject ausente, organización inválida o pertenencia desconocida. No verifica JWT: la verificación concreta está en `backend/internal/authn/auth0.go`.
+La conversión de una identidad ya verificada a ese scope está en `backend/internal/authz/`. `MembershipReader` resuelve organizaciones por `subject` desde una fuente server-side; `MembershipAuthorizer` entrega esas membresías a `ScopeForOrganization`, que rechaza subject ausente, organización inválida o pertenencia desconocida. No verifica JWT: la verificación concreta está en `backend/internal/authn/auth0.go`.
 
 La extracción de credenciales está aislada en `backend/internal/authn/bearer.go`. `BearerToken` acepta exactamente un header Bearer y no registra ni valida su contenido; `Authenticate` conecta esa extracción con un `Verifier` inyectado; `Middleware` coloca únicamente el principal verificado en el contexto downstream y responde genéricamente ante errores. `Auth0Verifier` implementa ese puerto mediante discovery OIDC y JWKS cacheado por la librería. Solo extrae `sub`; las organizaciones y roles se resolverán en el servidor.
 

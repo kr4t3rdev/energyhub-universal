@@ -1,2 +1,6 @@
-energyhub-universal/backend/internal/authz/scope.go:26:	ScopeForOrganization	100.0%
-total:							(statements)		100.0%
+energyhub-universal/backend/internal/authz/membership.go:23:	NewMembershipAuthorizer	100.0%
+energyhub-universal/backend/internal/authz/membership.go:27:	Organizations		100.0%
+energyhub-universal/backend/internal/authz/membership.go:37:	ScopeForOrganization	100.0%
+energyhub-universal/backend/internal/authz/membership.go:55:	validatePrincipal	100.0%
+energyhub-universal/backend/internal/authz/scope.go:28:		ScopeForOrganization	100.0%
+total:								(statements)		100.0%

@@ -17,12 +17,14 @@ var (
 // Principal is the result of a future token verifier.
 // It contains no raw token and is not populated by this package.
 type Principal struct {
-	Subject       string
+	Subject string
+	// Organizations must be populated by MembershipReader, never from raw
+	// client-controlled headers or an untrusted token claim.
 	Organizations []contracts.OrganizationSummary
 }
 
-// ScopeForOrganization converts verified membership into the tenant scope
-// required by the site service. The organization path is never trusted alone.
+// ScopeForOrganization converts server-resolved membership into the tenant
+// scope required by the site service. The organization path is never trusted.
 func ScopeForOrganization(principal Principal, organizationID string) (site.Scope, error) {
 	subject := strings.TrimSpace(principal.Subject)
 	if subject == "" {
