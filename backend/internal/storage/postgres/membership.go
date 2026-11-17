@@ -7,17 +7,24 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"energyhub-universal/backend/internal/authz"
 	"energyhub-universal/backend/internal/contracts"
 )
 
-const listOrganizationsQuery = `
+const (
+	listOrganizationsQuery = `
 SELECT o.id, o.name, m.role
 FROM organization_memberships AS m
 JOIN organizations AS o ON o.id = m.organization_id
 WHERE m.subject = $1
 ORDER BY o.name, o.id`
+
+	// setMembershipSubjectQuery sets the transaction-local subject that RLS
+	// policies use. The value is bound, never interpolated.
+	setMembershipSubjectQuery = `SELECT set_config('app.current_subject', $1, true)`
+)
 
 var ErrInvalidMembershipRole = errors.New("invalid membership role")
 
@@ -31,43 +38,78 @@ type Rows interface {
 	Close()
 }
 
-// Querier executes a parameterized query. Implementations must bind args
-// positionally and never interpolate caller input into SQL.
-type Querier interface {
+// Tx is the transaction surface used for RLS-scoped reads and administrative
+// writes. Exec discards the command tag; Query returns the result set.
+type Tx interface {
+	Exec(ctx context.Context, sql string, args ...any) error
 	Query(ctx context.Context, sql string, args ...any) (Rows, error)
+	Commit(ctx context.Context) error
+	Rollback(ctx context.Context) error
 }
 
-type pgxQuerier interface {
-	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+type DB interface {
+	Begin(ctx context.Context) (Tx, error)
 }
 
-type pgxAdapter struct {
-	querier pgxQuerier
+type pgxBeginner interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
-// NewQueryer adapts a pgx pool or connection to the narrow Querier port.
-func NewQueryer(querier pgxQuerier) Querier {
-	if querier == nil {
+var _ pgxBeginner = (*pgxpool.Pool)(nil)
+
+type pgxDB struct {
+	beginner pgxBeginner
+}
+
+// NewDB adapts a pgx pool or connection to the narrow DB port.
+func NewDB(beginner pgxBeginner) DB {
+	if beginner == nil {
 		return nil
 	}
-	return pgxAdapter{querier: querier}
+	return pgxDB{beginner: beginner}
 }
 
-func (a pgxAdapter) Query(ctx context.Context, sql string, args ...any) (Rows, error) {
-	rows, err := a.querier.Query(ctx, sql, args...)
+func (d pgxDB) Begin(ctx context.Context) (Tx, error) {
+	tx, err := d.beginner.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return pgxTx{tx: tx}, nil
+}
+
+type pgxTx struct {
+	tx pgx.Tx
+}
+
+func (t pgxTx) Exec(ctx context.Context, sql string, args ...any) error {
+	_, err := t.tx.Exec(ctx, sql, args...)
+	return err
+}
+
+func (t pgxTx) Query(ctx context.Context, sql string, args ...any) (Rows, error) {
+	rows, err := t.tx.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
 	return rows, nil
 }
 
-// MembershipReader reads organization membership from PostgreSQL. The subject
-// is always bound as a query argument.
-type MembershipReader struct {
-	db Querier
+func (t pgxTx) Commit(ctx context.Context) error {
+	return t.tx.Commit(ctx)
 }
 
-func NewMembershipReader(db Querier) *MembershipReader {
+func (t pgxTx) Rollback(ctx context.Context) error {
+	return t.tx.Rollback(ctx)
+}
+
+// MembershipReader reads organization membership from PostgreSQL. Every read
+// runs in a transaction that sets app.current_subject so RLS can enforce the
+// same subject even if a future query forgets the WHERE clause.
+type MembershipReader struct {
+	db DB
+}
+
+func NewMembershipReader(db DB) *MembershipReader {
 	return &MembershipReader{db: db}
 }
 
@@ -80,7 +122,21 @@ func (r *MembershipReader) ListOrganizations(ctx context.Context, subject string
 		return nil, authz.ErrMembershipReaderUnavailable
 	}
 
-	rows, err := r.db.Query(ctx, listOrganizationsQuery, subject)
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback(ctx)
+		}
+	}()
+
+	if err := tx.Exec(ctx, setMembershipSubjectQuery, subject); err != nil {
+		return nil, err
+	}
+	rows, err := tx.Query(ctx, listOrganizationsQuery, subject)
 	if err != nil {
 		return nil, err
 	}
@@ -99,9 +155,16 @@ func (r *MembershipReader) ListOrganizations(ctx context.Context, subject string
 		}
 		organizations = append(organizations, organization)
 	}
-	if err := rows.Err(); err != nil {
+	rowsErr := rows.Err()
+	rows.Close()
+	if rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
+	committed = true
 	return organizations, nil
 }
 

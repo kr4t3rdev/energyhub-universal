@@ -1,0 +1,118 @@
+package authz
+
+import (
+	"context"
+	"errors"
+	"strings"
+
+	"energyhub-universal/backend/internal/contracts"
+)
+
+var (
+	ErrAdminNotConfigured          = errors.New("system admin is not configured")
+	ErrAdminForbidden              = errors.New("principal is not the system admin")
+	ErrInvalidMembershipTarget     = errors.New("membership target is invalid")
+	ErrMembershipWriterUnavailable = errors.New("membership writer unavailable")
+)
+
+// MembershipWriter is the administrative write port. The adminSubject is the
+// already verified principal and must never come from a request body.
+type MembershipWriter interface {
+	Grant(ctx context.Context, adminSubject, organizationID, subject string, role contracts.OrganizationRole) error
+	Revoke(ctx context.Context, adminSubject, organizationID, subject string) error
+}
+
+// AdminAuthorizer compares a verified principal with the single configured
+// system administrator. An empty configuration fails closed.
+type AdminAuthorizer struct {
+	subject string
+}
+
+func NewAdminAuthorizer(subject string) *AdminAuthorizer {
+	return &AdminAuthorizer{subject: strings.TrimSpace(subject)}
+}
+
+func (a *AdminAuthorizer) Authorize(principal Principal) error {
+	if a == nil || a.subject == "" {
+		return ErrAdminNotConfigured
+	}
+	subject := strings.TrimSpace(principal.Subject)
+	if subject == "" {
+		return ErrUnauthenticated
+	}
+	if subject != a.subject {
+		return ErrAdminForbidden
+	}
+	return nil
+}
+
+// AdminMembershipService is the only path allowed to call MembershipWriter.
+// Authorization happens before validation or storage access.
+type AdminMembershipService struct {
+	admin  *AdminAuthorizer
+	writer MembershipWriter
+}
+
+func NewAdminMembershipService(adminSubject string, writer MembershipWriter) *AdminMembershipService {
+	return &AdminMembershipService{
+		admin:  NewAdminAuthorizer(adminSubject),
+		writer: writer,
+	}
+}
+
+func (s *AdminMembershipService) Grant(
+	ctx context.Context,
+	principal Principal,
+	organizationID string,
+	subject string,
+	role contracts.OrganizationRole,
+) error {
+	if err := s.authorize(principal); err != nil {
+		return err
+	}
+	organizationID = strings.TrimSpace(organizationID)
+	subject = strings.TrimSpace(subject)
+	if organizationID == "" || subject == "" || !validRole(role) {
+		return ErrInvalidMembershipTarget
+	}
+	return s.writer.Grant(ctx, strings.TrimSpace(principal.Subject), organizationID, subject, role)
+}
+
+func (s *AdminMembershipService) Revoke(
+	ctx context.Context,
+	principal Principal,
+	organizationID string,
+	subject string,
+) error {
+	if err := s.authorize(principal); err != nil {
+		return err
+	}
+	organizationID = strings.TrimSpace(organizationID)
+	subject = strings.TrimSpace(subject)
+	if organizationID == "" || subject == "" {
+		return ErrInvalidMembershipTarget
+	}
+	return s.writer.Revoke(ctx, strings.TrimSpace(principal.Subject), organizationID, subject)
+}
+
+func (s *AdminMembershipService) authorize(principal Principal) error {
+	if s == nil || s.admin == nil {
+		return ErrAdminNotConfigured
+	}
+	if err := s.admin.Authorize(principal); err != nil {
+		return err
+	}
+	if s.writer == nil {
+		return ErrMembershipWriterUnavailable
+	}
+	return nil
+}
+
+func validRole(role contracts.OrganizationRole) bool {
+	switch role {
+	case contracts.RoleOwner, contracts.RoleAdmin, contracts.RoleMember, contracts.RoleViewer:
+		return true
+	default:
+		return false
+	}
+}

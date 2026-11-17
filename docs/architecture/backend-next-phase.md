@@ -70,13 +70,23 @@ La composición HTTP base añade `X-Request-ID` generado por el servidor y lo co
 - La consulta une `organization_memberships` con `organizations` y ordena por nombre e identificador.
 - El rol se valida contra el contrato (`owner`, `admin`, `member`, `viewer`) y un valor inesperado en la base produce error en lugar de degradar permisos.
 - Las filas se cierran siempre y el resultado vacío se devuelve como lista no nula.
-- `Querier`/`Rows` son un puerto estrecho con un adaptador `NewQueryer` para `pgxpool.Pool`; las pruebas usan fakes locales, sin depender de una base real.
+- `DB`/`Tx`/`Rows` son puertos estrechos con un adaptador `NewDB` para `pgxpool.Pool`; las pruebas usan fakes locales, sin depender de una base real.
 
 `backend/migrations/000001_create_organizations_and_memberships.up.sql` crea `organizations` y `organization_memberships` con `organization_id NOT NULL`, clave primaria `(organization_id, subject)`, `ON DELETE CASCADE` e índice por `subject`. El `CHECK` de roles se contrasta con el contrato mediante una prueba que lee la migración.
 
 El runner explícito está en `backend/cmd/migrate` y `backend/internal/storage/postgres/migrate.go`. `LoadMigrations` valida nombres, cuerpos, duplicados y orden; `Migrate` crea `schema_migrations`, omite versiones ya aplicadas y se niega a continuar si la base tiene una versión desconocida para el binario. `PgxMigrationStore` ejecuta el SQL de cada archivo con protocolo simple (para admitir varias sentencias) y registra la versión en la misma transacción. La API no ejecuta migraciones; solo se aplican con `DATABASE_URL=... go run ./cmd/migrate`.
 
-Pendiente antes de datos reales: RLS y un flujo administrativo auditado para crear membresías. El lector no se conecta a `main` ni se registran rutas de datos.
+## RLS y administración
+
+`backend/migrations/000002_enable_tenant_rls.up.sql` habilita y fuerza RLS en `organizations` y `organization_memberships`:
+
+- `app.current_subject` limita la lectura a las membresías propias y a las organizaciones donde el subject es miembro.
+- `app.is_system_admin = 'on'` permite lectura completa y escritura; sin ese ajuste, toda escritura queda denegada.
+- Ambas variables son transaction-local. El lector fija `app.current_subject` en la misma transacción de la consulta; el writer fija además `app.is_system_admin` solo después de que `authz.AdminMembershipService` compruebe que el `sub` verificado coincide con `SYSTEM_ADMIN_SUBJECT`.
+
+`SYSTEM_ADMIN_SUBJECT` es el único subject autorizado a crear, actualizar o revocar membresías. Está vacío por defecto y la autorización falla cerrada. `AdminMembershipService` valida organización, subject objetivo y rol antes de llamar al puerto; el writer vuelve a comparar el admin configurado antes de abrir la transacción, y no se invoca para un principal que no sea el admin.
+
+`NewMembershipReader`/`NewMembershipWriter` todavía no se conectan a `main` ni se registran rutas administrativas. La política RLS está definida y contrastada leyendo la migración, pero no se ha verificado contra una instancia PostgreSQL real; esa prueba queda pendiente antes de declarar aislamiento efectivo en producción.
 
 ## Puerta de entrada antes de datos reales
 
@@ -84,7 +94,7 @@ No se implementará el adaptador HTTP ni se sustituirá la fixture hasta dispone
 
 1. valores de despliegue Auth0 para `issuer`/`audience` y una prueba contra el tenant real;
 2. matriz de roles y política de pertenencia;
-3. migraciones con claves y restricciones de organización; el esquema inicial y el runner explícito existen, falta RLS;
+3. migraciones con claves y restricciones de organización; el esquema inicial, el runner y las políticas RLS existen, falta verificarlas contra PostgreSQL real;
 4. contrato OpenAPI revisado y pruebas de contrato;
 5. estrategia de errores, rate limiting, auditoría y observabilidad;
 6. pruebas de autorización que intenten cruzar organizaciones;
@@ -101,5 +111,6 @@ No se implementará el adaptador HTTP ni se sustituirá la fixture hasta dispone
 - El verifier Auth0 pasa pruebas con discovery/JWKS local TLS; cobertura total de `authn`: 95.7%.
 - La base HTTP pasa `go test ./internal/platform/httpapi` con 96.6% de cobertura; la rama de fallo del generador aleatorio se prueba mediante seam inyectable.
 - El lector PostgreSQL de membresías pasa `go test ./internal/storage/postgres` con 100% de cobertura, sin base real ni red.
+- RLS y administración pasan `go test ./internal/authz ./internal/storage/postgres` con 100% de cobertura: solo `SYSTEM_ADMIN_SUBJECT` llega al writer, fallo cerrado sin configuración, y el SQL RLS se contrasta leyendo la migración.
 - El runner de migraciones pasa las mismas pruebas con 100% de cobertura: validación de nombres/orden/duplicados, transacciones, rollback y rechazo de versiones desconocidas. No se ejecutó contra una base real.
 - Los logs reproducibles están en `docs/evidence/backend-contract-first-2026-11-16/`.

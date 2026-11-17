@@ -12,5 +12,6 @@ Fecha: 2026-11-16
 - Autenticación Auth0/Bearer: `go test ./internal/authn` PASS, cobertura de `authn` 95.7%.
 - Base HTTP: `go test ./internal/platform/httpapi` PASS, cobertura de `httpapi` 96.6%.
 - Membresías PostgreSQL: `go test ./internal/storage/postgres` PASS, cobertura 100%, sin base real.
+- RLS y admin: `go test ./internal/authz ./internal/storage/postgres` PASS, cobertura 100%; solo `SYSTEM_ADMIN_SUBJECT` puede escribir membresías y la configuración vacía falla cerrada.
 - Runner de migraciones: `go test ./internal/storage/postgres` PASS, cobertura 100%; `cmd/migrate` exige `DATABASE_URL` y no se ejecuta desde la API.
 - El verifier Auth0 valida firma y claims estándar mediante discovery/JWKS, pero aún no se registra en `NewRouter` ni consulta PostgreSQL.

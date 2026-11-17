@@ -10,6 +10,8 @@ import (
 )
 
 var migrationPath = "../../../migrations/000001_create_organizations_and_memberships.up.sql"
+var rlsMigrationPath = "../../../migrations/000002_enable_tenant_rls.up.sql"
+var rlsDownMigrationPath = "../../../migrations/000002_enable_tenant_rls.down.sql"
 
 func TestMigrationKeepsMembershipsTenantScoped(t *testing.T) {
 	schema, err := os.ReadFile(migrationPath)
@@ -58,6 +60,59 @@ func TestMigrationRoleCheckMatchesContractRoles(t *testing.T) {
 	for _, role := range contractRoles {
 		if !sqlRoles[string(role)] {
 			t.Fatalf("migration is missing contract role %q", role)
+		}
+	}
+}
+
+func TestRLSMigrationRestrictsReadsAndAdminWrites(t *testing.T) {
+	schema, err := os.ReadFile(rlsMigrationPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sql := string(schema)
+
+	for _, required := range []string{
+		"ALTER TABLE organizations ENABLE ROW LEVEL SECURITY",
+		"ALTER TABLE organizations FORCE ROW LEVEL SECURITY",
+		"ALTER TABLE organization_memberships ENABLE ROW LEVEL SECURITY",
+		"ALTER TABLE organization_memberships FORCE ROW LEVEL SECURITY",
+		"CREATE POLICY organizations_select_member",
+		"CREATE POLICY organizations_write_admin",
+		"CREATE POLICY memberships_select_own",
+		"CREATE POLICY memberships_write_admin",
+		"current_setting('app.current_subject', true)",
+		"current_setting('app.is_system_admin', true) = 'on'",
+	} {
+		if !strings.Contains(sql, required) {
+			t.Fatalf("RLS migration is missing %q", required)
+		}
+	}
+
+	if strings.Contains(sql, "USING (true)") {
+		t.Fatal("RLS migration contains a permissive USING (true) policy")
+	}
+}
+
+func TestRLSDownMigrationRemovesPolicies(t *testing.T) {
+	schema, err := os.ReadFile(rlsDownMigrationPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sql := string(schema)
+
+	for _, policy := range []string{
+		"memberships_write_admin",
+		"memberships_select_own",
+		"organizations_write_admin",
+		"organizations_select_member",
+	} {
+		if !strings.Contains(sql, "DROP POLICY IF EXISTS "+policy) {
+			t.Fatalf("RLS down migration does not drop %s", policy)
+		}
+	}
+	for _, table := range []string{"organizations", "organization_memberships"} {
+		if !strings.Contains(sql, "ALTER TABLE "+table+" DISABLE ROW LEVEL SECURITY") {
+			t.Fatalf("RLS down migration does not disable RLS on %s", table)
 		}
 	}
 }
