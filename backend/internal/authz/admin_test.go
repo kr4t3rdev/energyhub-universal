@@ -71,6 +71,117 @@ func TestAdminAuthorizerFailsClosedWithoutConfiguration(t *testing.T) {
 	}
 }
 
+type fakeOrganizationWriter struct {
+	createCalls int
+	admin       string
+	org         string
+	name        string
+	err         error
+}
+
+func (f *fakeOrganizationWriter) Create(_ context.Context, adminSubject, organizationID, name string) error {
+	f.createCalls++
+	f.admin = adminSubject
+	f.org = organizationID
+	f.name = name
+	return f.err
+}
+
+func TestAdminOrganizationServiceCreatesAsConfiguredAdmin(t *testing.T) {
+	writer := &fakeOrganizationWriter{}
+	service := NewAdminOrganizationService("auth0|admin", writer)
+
+	err := service.Create(context.Background(), Principal{Subject: " auth0|admin "}, " org-1 ", " Demo Org ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if writer.createCalls != 1 {
+		t.Fatalf("create calls = %d, want 1", writer.createCalls)
+	}
+	if writer.admin != "auth0|admin" || writer.org != "org-1" || writer.name != "Demo Org" {
+		t.Fatalf("writer call = %#v", writer)
+	}
+}
+
+func TestAdminOrganizationServiceRejectsNonAdminBeforeWriter(t *testing.T) {
+	writer := &fakeOrganizationWriter{}
+	service := NewAdminOrganizationService("auth0|admin", writer)
+
+	err := service.Create(context.Background(), Principal{Subject: "auth0|other"}, "org-1", "Demo Org")
+	if !errors.Is(err, ErrAdminForbidden) {
+		t.Fatalf("err = %v, want ErrAdminForbidden", err)
+	}
+	if writer.createCalls != 0 {
+		t.Fatalf("writer calls = %d, want 0", writer.createCalls)
+	}
+}
+
+func TestAdminOrganizationServiceRejectsInvalidTargetBeforeWriter(t *testing.T) {
+	tests := []struct {
+		name    string
+		org     string
+		orgName string
+	}{
+		{name: "missing organization", org: " ", orgName: "Demo Org"},
+		{name: "missing name", org: "org-1", orgName: " "},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			writer := &fakeOrganizationWriter{}
+			service := NewAdminOrganizationService("auth0|admin", writer)
+
+			err := service.Create(context.Background(), Principal{Subject: "auth0|admin"}, test.org, test.orgName)
+			if !errors.Is(err, ErrInvalidOrganizationTarget) {
+				t.Fatalf("err = %v, want ErrInvalidOrganizationTarget", err)
+			}
+			if writer.createCalls != 0 {
+				t.Fatalf("writer calls = %d, want 0", writer.createCalls)
+			}
+		})
+	}
+}
+
+func TestAdminOrganizationServicePropagatesWriterError(t *testing.T) {
+	want := errors.New("database unavailable")
+	service := NewAdminOrganizationService("auth0|admin", &fakeOrganizationWriter{err: want})
+
+	err := service.Create(context.Background(), Principal{Subject: "auth0|admin"}, "org-1", "Demo Org")
+	if !errors.Is(err, want) {
+		t.Fatalf("err = %v, want %v", err, want)
+	}
+}
+
+func TestAdminOrganizationServiceRejectsUnavailableWriter(t *testing.T) {
+	service := NewAdminOrganizationService("auth0|admin", nil)
+
+	err := service.Create(context.Background(), Principal{Subject: "auth0|admin"}, "org-1", "Demo Org")
+	if !errors.Is(err, ErrOrganizationWriterUnavailable) {
+		t.Fatalf("err = %v, want ErrOrganizationWriterUnavailable", err)
+	}
+}
+
+func TestAdminOrganizationServiceFailsClosedWithoutConfiguration(t *testing.T) {
+	writer := &fakeOrganizationWriter{}
+	service := NewAdminOrganizationService(" ", writer)
+
+	err := service.Create(context.Background(), Principal{Subject: "auth0|admin"}, "org-1", "Demo Org")
+	if !errors.Is(err, ErrAdminNotConfigured) {
+		t.Fatalf("err = %v, want ErrAdminNotConfigured", err)
+	}
+	if writer.createCalls != 0 {
+		t.Fatalf("writer calls = %d, want 0", writer.createCalls)
+	}
+}
+
+func TestAdminOrganizationServiceRejectsNilService(t *testing.T) {
+	var service *AdminOrganizationService
+
+	if err := service.Create(context.Background(), Principal{Subject: "auth0|admin"}, "org-1", "Demo Org"); !errors.Is(err, ErrAdminNotConfigured) {
+		t.Fatalf("err = %v, want ErrAdminNotConfigured", err)
+	}
+}
+
 func TestAdminMembershipServiceGrantsAsConfiguredAdmin(t *testing.T) {
 	writer := &fakeMembershipWriter{}
 	service := NewAdminMembershipService("auth0|admin", writer)

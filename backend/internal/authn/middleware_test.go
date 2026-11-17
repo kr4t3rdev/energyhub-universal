@@ -68,6 +68,53 @@ func TestMiddlewareReportsUnavailableVerifierAsServerError(t *testing.T) {
 	}
 }
 
+func TestMiddlewareUsesInjectedErrorResponder(t *testing.T) {
+	verifier := &fakeVerifier{err: errors.New("private verifier detail")}
+	responderCalls := 0
+	responder := func(writer http.ResponseWriter, _ *http.Request, status int, _ error) {
+		responderCalls++
+		writer.WriteHeader(status)
+		_, _ = writer.Write([]byte("envelope"))
+	}
+	nextCalls := 0
+
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	request.Header.Set("Authorization", "Bearer token-value")
+	response := httptest.NewRecorder()
+	Middleware(verifier, responder)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		nextCalls++
+	})).ServeHTTP(response, request)
+
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", response.Code)
+	}
+	if response.Body.String() != "envelope" {
+		t.Fatalf("body = %q, want the injected envelope", response.Body.String())
+	}
+	if responderCalls != 1 {
+		t.Fatalf("responder calls = %d, want 1", responderCalls)
+	}
+	if nextCalls != 0 {
+		t.Fatalf("next calls = %d, want 0", nextCalls)
+	}
+}
+
+func TestMiddlewareKeepsDefaultErrorResponseWithoutResponder(t *testing.T) {
+	verifier := &fakeVerifier{err: errors.New("private verifier detail")}
+
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	request.Header.Set("Authorization", "Bearer token-value")
+	response := httptest.NewRecorder()
+	Middleware(verifier)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})).ServeHTTP(response, request)
+
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", response.Code)
+	}
+	if response.Body.String() == "private verifier detail\n" {
+		t.Fatal("verifier error leaked to response")
+	}
+}
+
 func TestPrincipalFromContextReportsMissingValue(t *testing.T) {
 	if _, ok := PrincipalFromContext(context.Background()); ok {
 		t.Fatal("principal unexpectedly present")

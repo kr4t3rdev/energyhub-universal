@@ -95,6 +95,29 @@ El modelo actual tiene dos credenciales y dos fronteras:
 
 `NewMembershipReader`/`NewMembershipWriter` todavía no se conectan a `main` ni se registran rutas administrativas. El aislamiento ya está verificado contra una instancia PostgreSQL real: la prueba `TestIntegrationTenantIsolationAndAdminWrites` crea los roles, aplica las migraciones y comprueba que el rol runtime no escribe, no llama a las funciones admin y no ve otras membresías, mientras que el rol admin escribe solo a través de las funciones. Se activa con `TEST_DATABASE_URL` apuntando a un superusuario.
 
+## Composición HTTP y ruta protegida
+
+`backend/cmd/api/main.go` compone el servidor. `loadAPIConfig` exige autenticación y base de datos en bloque: una sin la otra es un error de configuración, no un modo degradado. Sin configuración solo se registra `/health`, que sigue siendo liveness puro.
+
+`httpapi.NewRouter` acepta opciones. `WithAuthentication(verifier, memberships)` registra `/v1/organizations` detrás de `authn.Middleware`; si falta el verificador o el reader, la ruta no se registra y no queda superficie protegida expuesta. El handler toma el sujeto del principal verificado, resuelve las organizaciones en PostgreSQL y devuelve `contracts.CurrentUser`. Los errores de autenticación usan el mismo sobre `contracts.ErrorResponse` que el resto de la API, con `X-Request-ID` y sin detalles internos.
+
+## Administración por CLI
+
+`backend/cmd/membership` es la única vía para crear organizaciones y conceder o revocar membresías:
+
+```sh
+ADMIN_DATABASE_URL=... SYSTEM_ADMIN_SUBJECT=dev|admin \
+  go run ./cmd/membership create-organization org-1 "Demo Org"
+ADMIN_DATABASE_URL=... SYSTEM_ADMIN_SUBJECT=dev|admin \
+  go run ./cmd/membership grant org-1 dev|user-1 viewer
+```
+
+El CLI actúa como el admin del sistema configurado y usa la credencial administrativa, que en PostgreSQL solo puede ejecutar las funciones `app.*`. No hay superficie HTTP que conceda membresías.
+
+## Stack local
+
+Mientras no exista un tenant Auth0, `backend/scripts/dev-stack.sh` levanta el entorno de desarrollo: roles de PostgreSQL, migraciones, emisor OIDC local y las variables de entorno para la API. `backend/cmd/devoidc` arranca el emisor en loopback con un usuario admin precreado (`dev|admin`); `backend/dev.env.example` documenta sus variables. Cuando exista el tenant real, solo cambian `AUTH0_ISSUER`, `AUTH0_AUDIENCE` y `SYSTEM_ADMIN_SUBJECT`: el verificador no cambia.
+
 ## Puerta de entrada antes de datos reales
 
 No se implementará el adaptador HTTP ni se sustituirá la fixture hasta disponer de:

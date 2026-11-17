@@ -9,10 +9,12 @@ import (
 )
 
 var (
-	ErrAdminNotConfigured          = errors.New("system admin is not configured")
-	ErrAdminForbidden              = errors.New("principal is not the system admin")
-	ErrInvalidMembershipTarget     = errors.New("membership target is invalid")
-	ErrMembershipWriterUnavailable = errors.New("membership writer unavailable")
+	ErrAdminNotConfigured            = errors.New("system admin is not configured")
+	ErrAdminForbidden                = errors.New("principal is not the system admin")
+	ErrInvalidMembershipTarget       = errors.New("membership target is invalid")
+	ErrInvalidOrganizationTarget     = errors.New("organization target is invalid")
+	ErrMembershipWriterUnavailable   = errors.New("membership writer unavailable")
+	ErrOrganizationWriterUnavailable = errors.New("organization writer unavailable")
 )
 
 // MembershipWriter is the administrative write port. The adminSubject is the
@@ -104,6 +106,55 @@ func (s *AdminMembershipService) authorize(principal Principal) error {
 	}
 	if s.writer == nil {
 		return ErrMembershipWriterUnavailable
+	}
+	return nil
+}
+
+// OrganizationWriter is the administrative write port for organizations.
+type OrganizationWriter interface {
+	Create(ctx context.Context, adminSubject, organizationID, name string) error
+}
+
+// AdminOrganizationService is the only path allowed to create organizations.
+type AdminOrganizationService struct {
+	admin  *AdminAuthorizer
+	writer OrganizationWriter
+}
+
+func NewAdminOrganizationService(adminSubject string, writer OrganizationWriter) *AdminOrganizationService {
+	return &AdminOrganizationService{
+		admin:  NewAdminAuthorizer(adminSubject),
+		writer: writer,
+	}
+}
+
+// Create authorizes the principal before validating or touching storage.
+func (s *AdminOrganizationService) Create(
+	ctx context.Context,
+	principal Principal,
+	organizationID string,
+	name string,
+) error {
+	if err := s.authorize(principal); err != nil {
+		return err
+	}
+	organizationID = strings.TrimSpace(organizationID)
+	name = strings.TrimSpace(name)
+	if organizationID == "" || name == "" {
+		return ErrInvalidOrganizationTarget
+	}
+	return s.writer.Create(ctx, strings.TrimSpace(principal.Subject), organizationID, name)
+}
+
+func (s *AdminOrganizationService) authorize(principal Principal) error {
+	if s == nil || s.admin == nil {
+		return ErrAdminNotConfigured
+	}
+	if err := s.admin.Authorize(principal); err != nil {
+		return err
+	}
+	if s.writer == nil {
+		return ErrOrganizationWriterUnavailable
 	}
 	return nil
 }
