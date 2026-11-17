@@ -52,7 +52,7 @@ Todos requieren `bearerAuth`. Las respuestas de error comparten `code`, `message
 
 Los modelos Go correspondientes están en `backend/internal/contracts/overview.go`. Sus pruebas de serialización cubren `null` para lecturas/fechas ausentes, el sobre de errores y las respuestas de listas. El paquete no registra rutas ni resuelve identidad: es una representación de contrato para la siguiente implementación.
 
-La frontera de aplicación está en `backend/internal/site/service.go`: recibe un `Scope` con `organizationID` y `subject`, exige ambos antes de tocar el reader y obliga al puerto tenant-aware a recibir `organizationID` en cada operación. Sigue sin autenticar el subject; esa responsabilidad queda en el middleware futuro.
+La frontera de aplicación está en `backend/internal/site/service.go`: recibe un `Scope` con `organizationID` y `subject`, exige ambos antes de tocar el reader y obliga al puerto tenant-aware a recibir `organizationID` en cada operación. El servicio no verifica el JWT; esa responsabilidad está en `backend/internal/authn/middleware.go` y en la composición HTTP.
 
 La conversión de una identidad ya verificada a ese scope está en `backend/internal/authz/`. `MembershipReader` resuelve organizaciones por `subject` desde una fuente server-side; `MembershipAuthorizer` entrega esas membresías a `ScopeForOrganization`, que rechaza subject ausente, organización inválida o pertenencia desconocida. No verifica JWT: la verificación concreta está en `backend/internal/authn/auth0.go`.
 
