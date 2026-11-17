@@ -1,3 +1,6 @@
-energyhub-universal/backend/internal/authn/bearer.go:27:	Authenticate	100.0%
-energyhub-universal/backend/internal/authn/bearer.go:40:	BearerToken	100.0%
-total:								(statements)	100.0%
+energyhub-universal/backend/internal/authn/bearer.go:27:	Authenticate		100.0%
+energyhub-universal/backend/internal/authn/bearer.go:40:	BearerToken		100.0%
+energyhub-universal/backend/internal/authn/middleware.go:15:	Middleware		100.0%
+energyhub-universal/backend/internal/authn/middleware.go:33:	withPrincipal		100.0%
+energyhub-universal/backend/internal/authn/middleware.go:37:	PrincipalFromContext	100.0%
+total:								(statements)		100.0%
