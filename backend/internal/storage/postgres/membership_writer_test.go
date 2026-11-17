@@ -3,13 +3,14 @@ package postgres
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"energyhub-universal/backend/internal/authz"
 	"energyhub-universal/backend/internal/contracts"
 )
 
-func TestMembershipWriterGrantsInAnAdminTransaction(t *testing.T) {
+func TestMembershipWriterGrantsThroughTheAdminFunction(t *testing.T) {
 	tx := &fakeMembershipTx{}
 	db := &fakeDB{tx: tx}
 
@@ -26,20 +27,14 @@ func TestMembershipWriterGrantsInAnAdminTransaction(t *testing.T) {
 	if db.begins != 1 {
 		t.Fatalf("begin calls = %d, want 1", db.begins)
 	}
-	if len(tx.execCalls) != 3 {
-		t.Fatalf("exec calls = %#v, want subject, admin flag and upsert", tx.execCalls)
+	if len(tx.execCalls) != 1 {
+		t.Fatalf("exec calls = %#v, want only the admin function call", tx.execCalls)
 	}
-	if tx.execCalls[0] != setMembershipSubjectQuery || len(tx.execArgs[0]) != 1 || tx.execArgs[0][0] != "auth0|admin" {
-		t.Fatalf("subject setting = %q %#v", tx.execCalls[0], tx.execArgs[0])
+	if tx.execCalls[0] != grantMembershipFunctionQuery {
+		t.Fatalf("exec = %q, want the admin grant function", tx.execCalls[0])
 	}
-	if tx.execCalls[1] != setSystemAdminQuery {
-		t.Fatalf("admin setting = %q", tx.execCalls[1])
-	}
-	if tx.execCalls[2] != upsertMembershipQuery {
-		t.Fatalf("upsert = %q", tx.execCalls[2])
-	}
-	if len(tx.execArgs[2]) != 3 || tx.execArgs[2][0] != "org-1" || tx.execArgs[2][1] != "auth0|user-1" || tx.execArgs[2][2] != "viewer" {
-		t.Fatalf("upsert args = %#v", tx.execArgs[2])
+	if len(tx.execArgs[0]) != 3 || tx.execArgs[0][0] != "org-1" || tx.execArgs[0][1] != "auth0|user-1" || tx.execArgs[0][2] != "viewer" {
+		t.Fatalf("grant args = %#v", tx.execArgs[0])
 	}
 	if !tx.commitCalled {
 		t.Fatal("transaction was not committed")
@@ -49,7 +44,27 @@ func TestMembershipWriterGrantsInAnAdminTransaction(t *testing.T) {
 	}
 }
 
-func TestMembershipWriterRevokesInAnAdminTransaction(t *testing.T) {
+func TestMembershipWriterNeverSetsTheForgeableAdminSetting(t *testing.T) {
+	tx := &fakeMembershipTx{}
+
+	err := NewMembershipWriter(&fakeDB{tx: tx}, "auth0|admin").Grant(
+		context.Background(),
+		"auth0|admin",
+		"org-1",
+		"auth0|user-1",
+		contracts.RoleViewer,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, call := range tx.execCalls {
+		if strings.Contains(call, "is_system_admin") {
+			t.Fatalf("exec call %q sets the forgeable admin setting", call)
+		}
+	}
+}
+
+func TestMembershipWriterRevokesThroughTheAdminFunction(t *testing.T) {
 	tx := &fakeMembershipTx{}
 
 	err := NewMembershipWriter(&fakeDB{tx: tx}, "auth0|admin").Revoke(
@@ -61,11 +76,11 @@ func TestMembershipWriterRevokesInAnAdminTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(tx.execCalls) != 3 || tx.execCalls[2] != deleteMembershipQuery {
+	if len(tx.execCalls) != 1 || tx.execCalls[0] != revokeMembershipFunctionQuery {
 		t.Fatalf("exec calls = %#v", tx.execCalls)
 	}
-	if len(tx.execArgs[2]) != 2 || tx.execArgs[2][0] != "org-1" || tx.execArgs[2][1] != "auth0|user-1" {
-		t.Fatalf("delete args = %#v", tx.execArgs[2])
+	if len(tx.execArgs[0]) != 2 || tx.execArgs[0][0] != "org-1" || tx.execArgs[0][1] != "auth0|user-1" {
+		t.Fatalf("revoke args = %#v", tx.execArgs[0])
 	}
 	if !tx.commitCalled {
 		t.Fatal("transaction was not committed")
@@ -157,28 +172,9 @@ func TestMembershipWriterPropagatesBeginError(t *testing.T) {
 	}
 }
 
-func TestMembershipWriterRollsBackWhenSubjectSettingFails(t *testing.T) {
-	want := errors.New("set_config failed")
+func TestMembershipWriterRollsBackWhenAdminFunctionFails(t *testing.T) {
+	want := errors.New("caller is not a membership administrator")
 	tx := &fakeMembershipTx{execErr: want, failOnExec: 1}
-
-	err := NewMembershipWriter(&fakeDB{tx: tx}, "auth0|admin").Grant(
-		context.Background(),
-		"auth0|admin",
-		"org-1",
-		"auth0|user-1",
-		contracts.RoleViewer,
-	)
-	if !errors.Is(err, want) {
-		t.Fatalf("err = %v, want %v", err, want)
-	}
-	if !tx.rollbackCalled {
-		t.Fatal("transaction was not rolled back")
-	}
-}
-
-func TestMembershipWriterRollsBackWhenAdminFlagFails(t *testing.T) {
-	want := errors.New("set_config failed")
-	tx := &fakeMembershipTx{execErr: want, failOnExec: 2}
 
 	err := NewMembershipWriter(&fakeDB{tx: tx}, "auth0|admin").Grant(
 		context.Background(),
@@ -197,7 +193,7 @@ func TestMembershipWriterRollsBackWhenAdminFlagFails(t *testing.T) {
 
 func TestMembershipWriterRollsBackWhenWriteFails(t *testing.T) {
 	want := errors.New("foreign key violation")
-	tx := &fakeMembershipTx{execErr: want, failOnExec: 3}
+	tx := &fakeMembershipTx{execErr: want, failOnExec: 1}
 
 	err := NewMembershipWriter(&fakeDB{tx: tx}, "auth0|admin").Grant(
 		context.Background(),
@@ -249,7 +245,7 @@ func TestMembershipWriterRevokeRejectsInvalidTarget(t *testing.T) {
 
 func TestMembershipWriterRollsBackWhenDeleteFails(t *testing.T) {
 	want := errors.New("delete failed")
-	tx := &fakeMembershipTx{execErr: want, failOnExec: 3}
+	tx := &fakeMembershipTx{execErr: want, failOnExec: 1}
 
 	err := NewMembershipWriter(&fakeDB{tx: tx}, "auth0|admin").Revoke(
 		context.Background(),

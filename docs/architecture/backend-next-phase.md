@@ -81,12 +81,19 @@ El runner explícito está en `backend/cmd/migrate` y `backend/internal/storage/
 `backend/migrations/000002_enable_tenant_rls.up.sql` habilita y fuerza RLS en `organizations` y `organization_memberships`:
 
 - `app.current_subject` limita la lectura a las membresías propias y a las organizaciones donde el subject es miembro.
-- `app.is_system_admin = 'on'` permite lectura completa y escritura; sin ese ajuste, toda escritura queda denegada.
-- Ambas variables son transaction-local. El lector fija `app.current_subject` en la misma transacción de la consulta; el writer fija además `app.is_system_admin` solo después de que `authz.AdminMembershipService` compruebe que el `sub` verificado coincide con `SYSTEM_ADMIN_SUBJECT`.
+- El lector fija `app.current_subject` en la misma transacción de la consulta, a partir del subject ya verificado.
+
+`backend/migrations/000003_secure_admin_writes.up.sql` sustituye la escritura administrativa basada en `app.is_system_admin` por una frontera de rol de PostgreSQL. La comprobación empírica contra PostgreSQL 17.11 mostró que un GUC personalizado no puede protegerse (`REVOKE SET ON PARAMETER` no aplica a `app.*`): con la credencial de la aplicación era posible ejecutar `SET app.is_system_admin = 'on'` y escribir membresías sin pasar por la autorización del servidor.
+
+El modelo actual tiene dos credenciales y dos fronteras:
+
+- `DATABASE_URL` usa el rol `energyhub_runtime`, que solo tiene `SELECT`; las políticas RLS limitan la lectura al subject verificado y a las organizaciones donde es miembro.
+- `ADMIN_DATABASE_URL` usa el rol `energyhub_admin`, miembro del grupo `energyhub_membership_admin`. Solo ese grupo puede ejecutar las funciones `SECURITY DEFINER` `app.create_organization`, `app.grant_membership` y `app.revoke_membership`, que son la única vía de escritura. Cada función repite la comprobación `pg_has_role(session_user, 'energyhub_membership_admin', 'member')`, de modo que un `GRANT` accidental no abre la puerta.
+- No existe ninguna política de escritura directa: incluso el rol admin recibe `permission denied` al insertar en las tablas.
 
 `SYSTEM_ADMIN_SUBJECT` es el único subject autorizado a crear, actualizar o revocar membresías. Está vacío por defecto y la autorización falla cerrada. `AdminMembershipService` valida organización, subject objetivo y rol antes de llamar al puerto; el writer vuelve a comparar el admin configurado antes de abrir la transacción, y no se invoca para un principal que no sea el admin.
 
-`NewMembershipReader`/`NewMembershipWriter` todavía no se conectan a `main` ni se registran rutas administrativas. La política RLS está definida y contrastada leyendo la migración, pero no se ha verificado contra una instancia PostgreSQL real; esa prueba queda pendiente antes de declarar aislamiento efectivo en producción.
+`NewMembershipReader`/`NewMembershipWriter` todavía no se conectan a `main` ni se registran rutas administrativas. El aislamiento ya está verificado contra una instancia PostgreSQL real: la prueba `TestIntegrationTenantIsolationAndAdminWrites` crea los roles, aplica las migraciones y comprueba que el rol runtime no escribe, no llama a las funciones admin y no ve otras membresías, mientras que el rol admin escribe solo a través de las funciones. Se activa con `TEST_DATABASE_URL` apuntando a un superusuario.
 
 ## Puerta de entrada antes de datos reales
 
@@ -94,7 +101,7 @@ No se implementará el adaptador HTTP ni se sustituirá la fixture hasta dispone
 
 1. valores de despliegue Auth0 para `issuer`/`audience` y una prueba contra el tenant real;
 2. matriz de roles y política de pertenencia;
-3. migraciones con claves y restricciones de organización; el esquema inicial, el runner y las políticas RLS existen, falta verificarlas contra PostgreSQL real;
+3. migraciones con claves y restricciones de organización; el esquema inicial, el runner y las políticas RLS existen y están verificados contra PostgreSQL real;
 4. contrato OpenAPI revisado y pruebas de contrato;
 5. estrategia de errores, rate limiting, auditoría y observabilidad;
 6. pruebas de autorización que intenten cruzar organizaciones;

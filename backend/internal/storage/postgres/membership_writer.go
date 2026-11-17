@@ -9,22 +9,17 @@ import (
 )
 
 const (
-	setSystemAdminQuery = `SELECT set_config('app.is_system_admin', 'on', true)`
-
-	upsertMembershipQuery = `
-INSERT INTO organization_memberships (organization_id, subject, role)
-VALUES ($1, $2, $3)
-ON CONFLICT (organization_id, subject)
-DO UPDATE SET role = EXCLUDED.role`
-
-	deleteMembershipQuery = `
-DELETE FROM organization_memberships
-WHERE organization_id = $1 AND subject = $2`
+	// The writer calls SECURITY DEFINER functions instead of writing tables.
+	// The database grants EXECUTE on them only to the membership admin role,
+	// so the write boundary is the credential, not a session setting.
+	grantMembershipFunctionQuery  = `SELECT app.grant_membership($1, $2, $3)`
+	revokeMembershipFunctionQuery = `SELECT app.revoke_membership($1, $2)`
 )
 
 // MembershipWriter performs administrative writes. It only accepts the admin
-// subject configured at construction and sets both RLS session values inside
-// the transaction. authz.AdminMembershipService remains the primary gate.
+// subject configured at construction and calls the audited admin functions with
+// the administrative database credential. authz.AdminMembershipService remains
+// the primary gate.
 type MembershipWriter struct {
 	db           DB
 	adminSubject string
@@ -51,8 +46,8 @@ func (w *MembershipWriter) Grant(
 	if _, err := membershipRole(string(role)); err != nil {
 		return err
 	}
-	return w.inAdminTx(ctx, adminSubject, func(tx Tx) error {
-		return tx.Exec(ctx, upsertMembershipQuery, organizationID, subject, string(role))
+	return w.inAdminTx(ctx, func(tx Tx) error {
+		return tx.Exec(ctx, grantMembershipFunctionQuery, organizationID, subject, string(role))
 	})
 }
 
@@ -66,8 +61,8 @@ func (w *MembershipWriter) Revoke(
 	if err != nil {
 		return err
 	}
-	return w.inAdminTx(ctx, adminSubject, func(tx Tx) error {
-		return tx.Exec(ctx, deleteMembershipQuery, organizationID, subject)
+	return w.inAdminTx(ctx, func(tx Tx) error {
+		return tx.Exec(ctx, revokeMembershipFunctionQuery, organizationID, subject)
 	})
 }
 
@@ -88,7 +83,7 @@ func (w *MembershipWriter) authorize(adminSubject string) error {
 	return nil
 }
 
-func (w *MembershipWriter) inAdminTx(ctx context.Context, adminSubject string, write func(Tx) error) error {
+func (w *MembershipWriter) inAdminTx(ctx context.Context, write func(Tx) error) error {
 	tx, err := w.db.Begin(ctx)
 	if err != nil {
 		return err
@@ -100,12 +95,6 @@ func (w *MembershipWriter) inAdminTx(ctx context.Context, adminSubject string, w
 		}
 	}()
 
-	if err := tx.Exec(ctx, setMembershipSubjectQuery, adminSubject); err != nil {
-		return err
-	}
-	if err := tx.Exec(ctx, setSystemAdminQuery); err != nil {
-		return err
-	}
 	if err := write(tx); err != nil {
 		return err
 	}

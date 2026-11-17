@@ -12,6 +12,8 @@ import (
 var migrationPath = "../../../migrations/000001_create_organizations_and_memberships.up.sql"
 var rlsMigrationPath = "../../../migrations/000002_enable_tenant_rls.up.sql"
 var rlsDownMigrationPath = "../../../migrations/000002_enable_tenant_rls.down.sql"
+var adminWriteMigrationPath = "../../../migrations/000003_secure_admin_writes.up.sql"
+var adminWriteDownMigrationPath = "../../../migrations/000003_secure_admin_writes.down.sql"
 
 func TestMigrationKeepsMembershipsTenantScoped(t *testing.T) {
 	schema, err := os.ReadFile(migrationPath)
@@ -60,6 +62,88 @@ func TestMigrationRoleCheckMatchesContractRoles(t *testing.T) {
 	for _, role := range contractRoles {
 		if !sqlRoles[string(role)] {
 			t.Fatalf("migration is missing contract role %q", role)
+		}
+	}
+}
+
+func TestAdminWriteMigrationReplacesForgeableGUCBoundary(t *testing.T) {
+	schema, err := os.ReadFile(adminWriteMigrationPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sql := string(schema)
+
+	for _, required := range []string{
+		"CREATE SCHEMA IF NOT EXISTS app",
+		"CREATE OR REPLACE FUNCTION app.grant_membership",
+		"CREATE OR REPLACE FUNCTION app.revoke_membership",
+		"CREATE OR REPLACE FUNCTION app.create_organization",
+		"SECURITY DEFINER",
+		"SET search_path = ''",
+		"pg_has_role(session_user, 'energyhub_membership_admin', 'member')",
+		"REVOKE ALL ON FUNCTION app.grant_membership",
+		"REVOKE ALL ON FUNCTION app.revoke_membership",
+		"REVOKE ALL ON FUNCTION app.create_organization",
+		"FROM PUBLIC",
+		"GRANT EXECUTE ON FUNCTION app.grant_membership",
+		"GRANT EXECUTE ON FUNCTION app.revoke_membership",
+		"GRANT EXECUTE ON FUNCTION app.create_organization",
+		"TO energyhub_membership_admin",
+		"ALTER FUNCTION app.grant_membership",
+		"ALTER FUNCTION app.revoke_membership",
+		"ALTER FUNCTION app.create_organization",
+		"OWNER TO energyhub_owner",
+		"GRANT SELECT ON public.organizations, public.organization_memberships TO energyhub_runtime",
+		"GRANT SELECT, INSERT, UPDATE, DELETE ON public.organizations, public.organization_memberships TO energyhub_owner",
+		"DROP POLICY IF EXISTS organizations_write_admin",
+		"DROP POLICY IF EXISTS memberships_write_admin",
+		"pg_has_role(current_user, 'energyhub_membership_admin', 'member')",
+	} {
+		if !strings.Contains(sql, required) {
+			t.Fatalf("admin write migration is missing %q", required)
+		}
+	}
+
+	if strings.Contains(executableSQL(sql), "app.is_system_admin") {
+		t.Fatal("admin write migration still trusts the forgeable app.is_system_admin setting")
+	}
+	if strings.Contains(executableSQL(sql), "GRANT ALL") {
+		t.Fatal("admin write migration grants broad privileges")
+	}
+}
+
+// executableSQL removes line comments so assertions look at the statements the
+// database actually runs.
+func executableSQL(sql string) string {
+	lines := strings.Split(sql, "\n")
+	kept := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if index := strings.Index(line, "--"); index >= 0 {
+			line = line[:index]
+		}
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		kept = append(kept, line)
+	}
+	return strings.Join(kept, "\n")
+}
+
+func TestAdminWriteDownMigrationRemovesSecureFunctions(t *testing.T) {
+	schema, err := os.ReadFile(adminWriteDownMigrationPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sql := string(schema)
+
+	for _, required := range []string{
+		"DROP FUNCTION IF EXISTS app.grant_membership",
+		"DROP FUNCTION IF EXISTS app.revoke_membership",
+		"DROP FUNCTION IF EXISTS app.create_organization",
+		"DROP SCHEMA IF EXISTS app",
+	} {
+		if !strings.Contains(sql, required) {
+			t.Fatalf("admin write down migration is missing %q", required)
 		}
 	}
 }
