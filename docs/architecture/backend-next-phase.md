@@ -1,6 +1,6 @@
 # Diseño de la siguiente fase backend
 
-Estado: diseño aprobado para contract-first; modelos de respuesta implementados. No implementa autenticación, endpoints de datos ni acceso a PostgreSQL.
+Estado: diseño aprobado para contract-first; modelos de respuesta y verifier Auth0 implementados. El verifier aún no se registra en rutas protegidas; no hay endpoints de datos ni acceso a PostgreSQL.
 
 ## Límites de la entrega actual
 
@@ -11,7 +11,7 @@ Estado: diseño aprobado para contract-first; modelos de respuesta implementados
 
 ## Autenticación propuesta
 
-1. Usar un proveedor OIDC compatible con OAuth 2.1; el proveedor concreto queda por decidir.
+1. Usar Auth0 como proveedor OIDC compatible con OAuth 2.1.
 2. Los clientes obtienen un access token de corta duración y lo envían como `Authorization: Bearer <token>`.
 3. Go valida firma mediante JWKS cacheado, `iss`, `aud`, `exp`, `nbf` y `sub`. Un token inválido o ausente produce `401`; no se debe consultar la base de datos antes de esa validación.
 4. El backend no aceptará `organization_id`, `tenant_id` ni roles desde cabeceras controladas por el cliente. La pertenencia y el rol se resolverán en el servidor.
@@ -54,9 +54,11 @@ Los modelos Go correspondientes están en `backend/internal/contracts/overview.g
 
 La frontera de aplicación está en `backend/internal/site/service.go`: recibe un `Scope` con `organizationID` y `subject`, exige ambos antes de tocar el reader y obliga al puerto tenant-aware a recibir `organizationID` en cada operación. Sigue sin autenticar el subject; esa responsabilidad queda en el middleware futuro.
 
-La conversión de una identidad ya verificada a ese scope está en `backend/internal/authz/scope.go`. `ScopeForOrganization` solo acepta una organización presente en las membresías del principal y rechaza subject ausente, organización inválida o pertenencia desconocida. No verifica JWT: esa entrada queda reservada para el proveedor OIDC futuro.
+La conversión de una identidad ya verificada a ese scope está en `backend/internal/authz/scope.go`. `ScopeForOrganization` solo acepta una organización presente en las membresías del principal y rechaza subject ausente, organización inválida o pertenencia desconocida. No verifica JWT: la verificación concreta está en `backend/internal/authn/auth0.go`.
 
-La extracción de credenciales está aislada en `backend/internal/authn/bearer.go`. `BearerToken` acepta exactamente un header Bearer y no registra ni valida su contenido; `Authenticate` conecta esa extracción con un `Verifier` inyectado; `Middleware` coloca únicamente el principal verificado en el contexto downstream y responde genéricamente ante errores. `Verifier` queda como puerto para una implementación OIDC/JWT posterior.
+La extracción de credenciales está aislada en `backend/internal/authn/bearer.go`. `BearerToken` acepta exactamente un header Bearer y no registra ni valida su contenido; `Authenticate` conecta esa extracción con un `Verifier` inyectado; `Middleware` coloca únicamente el principal verificado en el contexto downstream y responde genéricamente ante errores. `Auth0Verifier` implementa ese puerto mediante discovery OIDC y JWKS cacheado por la librería. Solo extrae `sub`; las organizaciones y roles se resolverán en el servidor.
+
+`Auth0Verifier` requiere `AUTH0_ISSUER` y `AUTH0_AUDIENCE` desde el entorno. `NewAuth0Verifier` todavía no se conecta a `main` ni a `NewRouter`, para no romper `/health` ni declarar rutas protegidas antes de disponer de configuración de despliegue y pruebas de autorización.
 
 La composición HTTP base añade `X-Request-ID` generado por el servidor y lo conserva en el contexto mediante `backend/internal/platform/httpapi/request.go`. `WriteErrorResponse` ofrece el sobre `contracts.ErrorResponse` común para futuros handlers; todavía no hay endpoints de datos que lo utilicen.
 
@@ -64,7 +66,7 @@ La composición HTTP base añade `X-Request-ID` generado por el servidor y lo co
 
 No se implementará el adaptador HTTP ni se sustituirá la fixture hasta disponer de:
 
-1. proveedor OIDC y configuración de `issuer`/`audience`;
+1. valores de despliegue Auth0 para `issuer`/`audience` y una prueba contra el tenant real;
 2. matriz de roles y política de pertenencia;
 3. migraciones con claves y restricciones de organización;
 4. contrato OpenAPI revisado y pruebas de contrato;
@@ -80,5 +82,6 @@ No se implementará el adaptador HTTP ni se sustituirá la fixture hasta dispone
 - La frontera tenant-aware pasa `go test ./internal/site` con 84.6% de cobertura.
 - La autorización de pertenencia pasa `go test ./internal/authz` con 100% de cobertura.
 - La extracción Bearer pasa `go test ./internal/authn` con 100% de cobertura.
+- El verifier Auth0 pasa pruebas con discovery/JWKS local TLS; cobertura total de `authn`: 95.7%.
 - La base HTTP pasa `go test ./internal/platform/httpapi` con 96.6% de cobertura; la rama de fallo del generador aleatorio se prueba mediante seam inyectable.
 - Los logs reproducibles están en `docs/evidence/backend-contract-first-2026-11-16/`.
