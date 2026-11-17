@@ -74,7 +74,9 @@ La composición HTTP base añade `X-Request-ID` generado por el servidor y lo co
 
 `backend/migrations/000001_create_organizations_and_memberships.up.sql` crea `organizations` y `organization_memberships` con `organization_id NOT NULL`, clave primaria `(organization_id, subject)`, `ON DELETE CASCADE` e índice por `subject`. El `CHECK` de roles se contrasta con el contrato mediante una prueba que lee la migración.
 
-Pendiente antes de datos reales: ejecutar migraciones con un runner, definir RLS y crear membresías desde un flujo administrativo auditado. El lector no se conecta a `main`, no registra rutas y no se ejecuta ninguna migración automáticamente.
+El runner explícito está en `backend/cmd/migrate` y `backend/internal/storage/postgres/migrate.go`. `LoadMigrations` valida nombres, cuerpos, duplicados y orden; `Migrate` crea `schema_migrations`, omite versiones ya aplicadas y se niega a continuar si la base tiene una versión desconocida para el binario. `PgxMigrationStore` ejecuta el SQL de cada archivo con protocolo simple (para admitir varias sentencias) y registra la versión en la misma transacción. La API no ejecuta migraciones; solo se aplican con `DATABASE_URL=... go run ./cmd/migrate`.
+
+Pendiente antes de datos reales: RLS y un flujo administrativo auditado para crear membresías. El lector no se conecta a `main` ni se registran rutas de datos.
 
 ## Puerta de entrada antes de datos reales
 
@@ -82,7 +84,7 @@ No se implementará el adaptador HTTP ni se sustituirá la fixture hasta dispone
 
 1. valores de despliegue Auth0 para `issuer`/`audience` y una prueba contra el tenant real;
 2. matriz de roles y política de pertenencia;
-3. migraciones con claves y restricciones de organización; el esquema inicial de membresías ya existe, falta el runner y RLS;
+3. migraciones con claves y restricciones de organización; el esquema inicial y el runner explícito existen, falta RLS;
 4. contrato OpenAPI revisado y pruebas de contrato;
 5. estrategia de errores, rate limiting, auditoría y observabilidad;
 6. pruebas de autorización que intenten cruzar organizaciones;
@@ -99,4 +101,5 @@ No se implementará el adaptador HTTP ni se sustituirá la fixture hasta dispone
 - El verifier Auth0 pasa pruebas con discovery/JWKS local TLS; cobertura total de `authn`: 95.7%.
 - La base HTTP pasa `go test ./internal/platform/httpapi` con 96.6% de cobertura; la rama de fallo del generador aleatorio se prueba mediante seam inyectable.
 - El lector PostgreSQL de membresías pasa `go test ./internal/storage/postgres` con 100% de cobertura, sin base real ni red.
+- El runner de migraciones pasa las mismas pruebas con 100% de cobertura: validación de nombres/orden/duplicados, transacciones, rollback y rechazo de versiones desconocidas. No se ejecutó contra una base real.
 - Los logs reproducibles están en `docs/evidence/backend-contract-first-2026-11-16/`.
