@@ -99,6 +99,23 @@ func TestOrganizationWriterRejectsInvalidInputBeforeTransaction(t *testing.T) {
 	}
 }
 
+func TestOrganizationWriterRejectsMissingAdminSubject(t *testing.T) {
+	db := &fakeDB{tx: &fakeMembershipTx{}}
+
+	err := NewOrganizationWriter(db, "auth0|admin").Create(
+		context.Background(),
+		" ",
+		"org-1",
+		"Demo Org",
+	)
+	if !errors.Is(err, authz.ErrUnauthenticated) {
+		t.Fatalf("err = %v, want ErrUnauthenticated", err)
+	}
+	if db.begins != 0 {
+		t.Fatalf("begin calls = %d, want 0", db.begins)
+	}
+}
+
 func TestOrganizationWriterPropagatesBeginError(t *testing.T) {
 	want := errors.New("pool exhausted")
 

@@ -181,6 +181,38 @@ func TestOrganizationsRouteIsNotRegisteredWithoutVerifier(t *testing.T) {
 	}
 }
 
+func TestOrganizationsHandlerRejectsRequestWithoutPrincipal(t *testing.T) {
+	memberships := &fakeMemberships{}
+
+	response := httptest.NewRecorder()
+	organizationsHandler(memberships).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/v1/organizations", nil))
+
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", response.Code)
+	}
+	if len(memberships.subjects) != 0 {
+		t.Fatalf("reader calls = %#v, want none", memberships.subjects)
+	}
+}
+
+func TestAuthenticationErrorResponderUsesInternalErrorCode(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/v1/organizations", nil)
+	response := httptest.NewRecorder()
+
+	authenticationErrorResponder(response, request, http.StatusInternalServerError, errors.New("verifier unavailable"))
+
+	if response.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500", response.Code)
+	}
+	var envelope contracts.ErrorResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode body %q: %v", response.Body.String(), err)
+	}
+	if envelope.Code != "internal_error" {
+		t.Fatalf("code = %q, want internal_error", envelope.Code)
+	}
+}
+
 func contains(haystack, needle string) bool {
 	return len(haystack) >= len(needle) && (haystack == needle || indexOf(haystack, needle) >= 0)
 }

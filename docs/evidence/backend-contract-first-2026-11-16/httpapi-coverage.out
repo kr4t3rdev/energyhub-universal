@@ -1,5 +1,16 @@
 mode: set
 energyhub-universal/backend/internal/platform/httpapi/errors.go:11.2,18.1 3 1
+energyhub-universal/backend/internal/platform/httpapi/organizations.go:16.2,16.82 1 1
+energyhub-universal/backend/internal/platform/httpapi/organizations.go:17.3,18.10 2 1
+energyhub-universal/backend/internal/platform/httpapi/organizations.go:19.4,21.1 2 1
+energyhub-universal/backend/internal/platform/httpapi/organizations.go:22.3,22.25 1 1
+energyhub-universal/backend/internal/platform/httpapi/organizations.go:23.4,25.1 2 0
+energyhub-universal/backend/internal/platform/httpapi/organizations.go:27.3,28.17 2 1
+energyhub-universal/backend/internal/platform/httpapi/organizations.go:29.4,31.1 2 1
+energyhub-universal/backend/internal/platform/httpapi/organizations.go:32.3,32.27 1 1
+energyhub-universal/backend/internal/platform/httpapi/organizations.go:33.4,34.1 1 0
+energyhub-universal/backend/internal/platform/httpapi/organizations.go:36.3,41.5 3 1
+energyhub-universal/backend/internal/platform/httpapi/organizations.go:46.2,48.1 2 1
 energyhub-universal/backend/internal/platform/httpapi/request.go:15.2,16.1 1 1
 energyhub-universal/backend/internal/platform/httpapi/request.go:19.2,19.82 1 1
 energyhub-universal/backend/internal/platform/httpapi/request.go:20.3,20.22 1 1
@@ -13,6 +24,17 @@ energyhub-universal/backend/internal/platform/httpapi/request.go:40.2,41.41 2 1
 energyhub-universal/backend/internal/platform/httpapi/request.go:45.2,46.47 2 1
 energyhub-universal/backend/internal/platform/httpapi/request.go:47.3,48.1 1 0
 energyhub-universal/backend/internal/platform/httpapi/request.go:49.2,49.42 1 1
-energyhub-universal/backend/internal/platform/httpapi/router.go:9.2,11.64 3 1
-energyhub-universal/backend/internal/platform/httpapi/router.go:12.3,14.1 2 1
-energyhub-universal/backend/internal/platform/httpapi/router.go:15.2,15.10 1 1
+energyhub-universal/backend/internal/platform/httpapi/router.go:24.2,24.38 1 1
+energyhub-universal/backend/internal/platform/httpapi/router.go:25.3,27.1 2 1
+energyhub-universal/backend/internal/platform/httpapi/router.go:31.2,32.33 2 1
+energyhub-universal/backend/internal/platform/httpapi/router.go:33.3,33.20 1 1
+energyhub-universal/backend/internal/platform/httpapi/router.go:34.4,35.1 1 1
+energyhub-universal/backend/internal/platform/httpapi/router.go:38.2,40.64 3 1
+energyhub-universal/backend/internal/platform/httpapi/router.go:41.3,43.1 2 1
+energyhub-universal/backend/internal/platform/httpapi/router.go:45.2,45.61 1 1
+energyhub-universal/backend/internal/platform/httpapi/router.go:46.3,46.37 1 1
+energyhub-universal/backend/internal/platform/httpapi/router.go:47.4,49.1 2 1
+energyhub-universal/backend/internal/platform/httpapi/router.go:52.2,52.10 1 1
+energyhub-universal/backend/internal/platform/httpapi/router.go:58.2,60.46 3 1
+energyhub-universal/backend/internal/platform/httpapi/router.go:61.3,63.1 2 1
+energyhub-universal/backend/internal/platform/httpapi/router.go:64.2,65.62 2 1
