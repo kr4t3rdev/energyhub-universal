@@ -1,0 +1,6 @@
+energyhub-universal/backend/internal/storage/postgres/membership.go:49:		NewQueryer		100.0%
+energyhub-universal/backend/internal/storage/postgres/membership.go:56:		Query			100.0%
+energyhub-universal/backend/internal/storage/postgres/membership.go:70:		NewMembershipReader	100.0%
+energyhub-universal/backend/internal/storage/postgres/membership.go:74:		ListOrganizations	100.0%
+energyhub-universal/backend/internal/storage/postgres/membership.go:108:	membershipRole		100.0%
+total:										(statements)		100.0%

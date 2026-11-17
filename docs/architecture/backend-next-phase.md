@@ -62,13 +62,27 @@ La extracción de credenciales está aislada en `backend/internal/authn/bearer.g
 
 La composición HTTP base añade `X-Request-ID` generado por el servidor y lo conserva en el contexto mediante `backend/internal/platform/httpapi/request.go`. `WriteErrorResponse` ofrece el sobre `contracts.ErrorResponse` común para futuros handlers; todavía no hay endpoints de datos que lo utilicen.
 
+## Membresías en PostgreSQL
+
+`backend/internal/storage/postgres/membership.go` implementa `authz.MembershipReader` sobre PostgreSQL:
+
+- `ListOrganizations` recibe el `subject` ya verificado y lo enlaza como `$1`; no concatena valores en SQL.
+- La consulta une `organization_memberships` con `organizations` y ordena por nombre e identificador.
+- El rol se valida contra el contrato (`owner`, `admin`, `member`, `viewer`) y un valor inesperado en la base produce error en lugar de degradar permisos.
+- Las filas se cierran siempre y el resultado vacío se devuelve como lista no nula.
+- `Querier`/`Rows` son un puerto estrecho con un adaptador `NewQueryer` para `pgxpool.Pool`; las pruebas usan fakes locales, sin depender de una base real.
+
+`backend/migrations/000001_create_organizations_and_memberships.up.sql` crea `organizations` y `organization_memberships` con `organization_id NOT NULL`, clave primaria `(organization_id, subject)`, `ON DELETE CASCADE` e índice por `subject`. El `CHECK` de roles se contrasta con el contrato mediante una prueba que lee la migración.
+
+Pendiente antes de datos reales: ejecutar migraciones con un runner, definir RLS y crear membresías desde un flujo administrativo auditado. El lector no se conecta a `main`, no registra rutas y no se ejecuta ninguna migración automáticamente.
+
 ## Puerta de entrada antes de datos reales
 
 No se implementará el adaptador HTTP ni se sustituirá la fixture hasta disponer de:
 
 1. valores de despliegue Auth0 para `issuer`/`audience` y una prueba contra el tenant real;
 2. matriz de roles y política de pertenencia;
-3. migraciones con claves y restricciones de organización;
+3. migraciones con claves y restricciones de organización; el esquema inicial de membresías ya existe, falta el runner y RLS;
 4. contrato OpenAPI revisado y pruebas de contrato;
 5. estrategia de errores, rate limiting, auditoría y observabilidad;
 6. pruebas de autorización que intenten cruzar organizaciones;
@@ -84,4 +98,5 @@ No se implementará el adaptador HTTP ni se sustituirá la fixture hasta dispone
 - La extracción Bearer pasa `go test ./internal/authn` con 100% de cobertura.
 - El verifier Auth0 pasa pruebas con discovery/JWKS local TLS; cobertura total de `authn`: 95.7%.
 - La base HTTP pasa `go test ./internal/platform/httpapi` con 96.6% de cobertura; la rama de fallo del generador aleatorio se prueba mediante seam inyectable.
+- El lector PostgreSQL de membresías pasa `go test ./internal/storage/postgres` con 100% de cobertura, sin base real ni red.
 - Los logs reproducibles están en `docs/evidence/backend-contract-first-2026-11-16/`.

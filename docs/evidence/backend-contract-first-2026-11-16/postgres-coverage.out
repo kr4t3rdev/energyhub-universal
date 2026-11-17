@@ -1,0 +1,27 @@
+mode: set
+energyhub-universal/backend/internal/storage/postgres/membership.go:50.2,50.20 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:51.3,52.1 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:53.2,53.37 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:57.2,58.16 2 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:59.3,60.1 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:61.2,61.18 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:71.2,72.1 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:75.2,76.19 2 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:77.3,78.1 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:79.2,79.29 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:80.3,81.1 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:83.2,84.16 2 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:85.3,86.1 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:87.2,88.1 3 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:89.2,90.18 3 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:91.3,93.80 3 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:94.4,95.1 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:96.3,97.17 2 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:98.4,99.1 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:100.3,100.54 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:102.2,102.35 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:103.3,104.1 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:105.2,105.27 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:109.2,109.43 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:111.3,111.48 1 1
+energyhub-universal/backend/internal/storage/postgres/membership.go:113.3,113.67 1 1
