@@ -25,4 +25,7 @@ func TestHealth(t *testing.T) {
 	if got := r.Header().Get("Content-Type"); got != "application/json" {
 		t.Fatalf("content type = %q", got)
 	}
+	if requestID := r.Header().Get(RequestIDHeader); requestID == "" {
+		t.Fatal("request ID header is missing")
+	}
 }

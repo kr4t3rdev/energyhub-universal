@@ -1,0 +1,7 @@
+energyhub-universal/backend/internal/platform/httpapi/errors.go:10:	WriteErrorResponse	100.0%
+energyhub-universal/backend/internal/platform/httpapi/request.go:14:	RequestIDMiddleware	100.0%
+energyhub-universal/backend/internal/platform/httpapi/request.go:18:	requestIDMiddleware	100.0%
+energyhub-universal/backend/internal/platform/httpapi/request.go:36:	RequestIDFromContext	100.0%
+energyhub-universal/backend/internal/platform/httpapi/request.go:44:	newRequestID		75.0%
+energyhub-universal/backend/internal/platform/httpapi/router.go:8:	NewRouter		100.0%
+total:									(statements)		96.6%

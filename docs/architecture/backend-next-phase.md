@@ -58,6 +58,8 @@ La conversión de una identidad ya verificada a ese scope está en `backend/inte
 
 La extracción de credenciales está aislada en `backend/internal/authn/bearer.go`. `BearerToken` acepta exactamente un header Bearer y no registra ni valida su contenido; `Authenticate` conecta esa extracción con un `Verifier` inyectado; `Middleware` coloca únicamente el principal verificado en el contexto downstream y responde genéricamente ante errores. `Verifier` queda como puerto para una implementación OIDC/JWT posterior.
 
+La composición HTTP base añade `X-Request-ID` generado por el servidor y lo conserva en el contexto mediante `backend/internal/platform/httpapi/request.go`. `WriteErrorResponse` ofrece el sobre `contracts.ErrorResponse` común para futuros handlers; todavía no hay endpoints de datos que lo utilicen.
+
 ## Puerta de entrada antes de datos reales
 
 No se implementará el adaptador HTTP ni se sustituirá la fixture hasta disponer de:
@@ -78,4 +80,5 @@ No se implementará el adaptador HTTP ni se sustituirá la fixture hasta dispone
 - La frontera tenant-aware pasa `go test ./internal/site` con 84.6% de cobertura.
 - La autorización de pertenencia pasa `go test ./internal/authz` con 100% de cobertura.
 - La extracción Bearer pasa `go test ./internal/authn` con 100% de cobertura.
+- La base HTTP pasa `go test ./internal/platform/httpapi` con 96.6% de cobertura; la rama de fallo del generador aleatorio se prueba mediante seam inyectable.
 - Los logs reproducibles están en `docs/evidence/backend-contract-first-2026-11-16/`.
