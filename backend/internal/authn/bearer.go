@@ -12,6 +12,7 @@ import (
 var (
 	ErrMissingBearerToken   = errors.New("authorization bearer token is missing")
 	ErrMalformedBearerToken = errors.New("authorization bearer token is malformed")
+	ErrVerifierUnavailable  = errors.New("authentication verifier unavailable")
 )
 
 // Verifier is the provider-neutral boundary for a future OIDC/JWT verifier.
@@ -19,6 +20,19 @@ var (
 // returning an authz.Principal.
 type Verifier interface {
 	Verify(ctx context.Context, token string) (authz.Principal, error)
+}
+
+// Authenticate composes request token extraction with an injected verifier.
+// The verifier owns all cryptographic and issuer-specific decisions.
+func Authenticate(ctx context.Context, request *http.Request, verifier Verifier) (authz.Principal, error) {
+	token, err := BearerToken(request)
+	if err != nil {
+		return authz.Principal{}, err
+	}
+	if verifier == nil {
+		return authz.Principal{}, ErrVerifierUnavailable
+	}
+	return verifier.Verify(ctx, token)
 }
 
 // BearerToken extracts exactly one Authorization bearer token.

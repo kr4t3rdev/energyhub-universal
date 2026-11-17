@@ -56,7 +56,7 @@ La frontera de aplicación está en `backend/internal/site/service.go`: recibe u
 
 La conversión de una identidad ya verificada a ese scope está en `backend/internal/authz/scope.go`. `ScopeForOrganization` solo acepta una organización presente en las membresías del principal y rechaza subject ausente, organización inválida o pertenencia desconocida. No verifica JWT: esa entrada queda reservada para el proveedor OIDC futuro.
 
-La extracción de credenciales está aislada en `backend/internal/authn/bearer.go`. `BearerToken` acepta exactamente un header Bearer y no registra ni valida su contenido; `Verifier` queda como puerto para una implementación OIDC/JWT posterior.
+La extracción de credenciales está aislada en `backend/internal/authn/bearer.go`. `BearerToken` acepta exactamente un header Bearer y no registra ni valida su contenido; `Authenticate` conecta esa extracción con un `Verifier` inyectado; `Verifier` queda como puerto para una implementación OIDC/JWT posterior.
 
 ## Puerta de entrada antes de datos reales
 
