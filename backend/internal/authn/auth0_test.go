@@ -88,6 +88,45 @@ func TestAuth0ConfigRejectsUnsafeIssuerAndAudienceValues(t *testing.T) {
 	}
 }
 
+func TestAuth0ConfigAcceptsLoopbackIssuerForDevelopment(t *testing.T) {
+	tests := []struct {
+		name   string
+		issuer string
+	}{
+		{name: "ipv4 loopback", issuer: "http://127.0.0.1:8089"},
+		{name: "ipv6 loopback", issuer: "http://[::1]:8089"},
+		{name: "localhost", issuer: "http://localhost:8089"},
+		{name: "loopback over tls", issuer: "https://127.0.0.1:8443"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			config := Auth0Config{Issuer: test.issuer, Audience: "https://api.energyhub.local"}
+			if err := config.Validate(); err != nil {
+				t.Fatalf("err = %v, want nil", err)
+			}
+		})
+	}
+}
+
+func TestAuth0ConfigRejectsNonLoopbackPlainHTTPIssuer(t *testing.T) {
+	tests := []string{
+		"http://auth.example.test",
+		"http://10.0.0.5:8089",
+		"http://192.168.1.10:8089",
+		"http://energyhub.local:8089",
+	}
+
+	for _, issuer := range tests {
+		t.Run(issuer, func(t *testing.T) {
+			err := (Auth0Config{Issuer: issuer, Audience: "api"}).Validate()
+			if !errors.Is(err, ErrInvalidAuth0Config) {
+				t.Fatalf("err = %v, want ErrInvalidAuth0Config", err)
+			}
+		})
+	}
+}
+
 func TestPrincipalFromAuth0TokenRequiresSubject(t *testing.T) {
 	principal, err := principalFromAuth0Subject("auth0|user-1")
 	if err != nil {

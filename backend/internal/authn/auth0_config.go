@@ -3,6 +3,7 @@ package authn
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"strings"
 
@@ -38,7 +39,8 @@ func LoadAuth0Config(getenv func(string) string) (Auth0Config, error) {
 }
 
 // Validate requires an HTTPS issuer and rejects values that could alter OIDC
-// discovery or token audience matching.
+// discovery or token audience matching. Plain HTTP is accepted only for
+// loopback issuers, which is how the local development issuer runs.
 func (c Auth0Config) Validate() error {
 	if c.Issuer == "" || c.Audience == "" {
 		return ErrInvalidAuth0Config
@@ -46,17 +48,27 @@ func (c Auth0Config) Validate() error {
 
 	issuer, err := url.Parse(c.Issuer)
 	if err != nil ||
-		issuer.Scheme != "https" ||
 		issuer.Host == "" ||
 		issuer.User != nil ||
 		issuer.RawQuery != "" ||
 		issuer.Fragment != "" {
-		return fmt.Errorf("%w: issuer must be an HTTPS URL without credentials, query, or fragment", ErrInvalidAuth0Config)
+		return fmt.Errorf("%w: issuer must be a URL without credentials, query, or fragment", ErrInvalidAuth0Config)
+	}
+	if issuer.Scheme != "https" && !(issuer.Scheme == "http" && isLoopbackHost(issuer.Hostname())) {
+		return fmt.Errorf("%w: issuer must be an HTTPS URL; plain HTTP is only allowed for loopback development issuers", ErrInvalidAuth0Config)
 	}
 	if strings.ContainsAny(c.Audience, " \t\r\n") {
 		return fmt.Errorf("%w: audience must not contain whitespace", ErrInvalidAuth0Config)
 	}
 	return nil
+}
+
+func isLoopbackHost(host string) bool {
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 func principalFromAuth0Subject(subject string) (authz.Principal, error) {
