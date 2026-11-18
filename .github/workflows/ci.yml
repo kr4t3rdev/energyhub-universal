@@ -4,12 +4,31 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     defaults: {run: {working-directory: backend}}
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: {go-version-file: backend/go.mod, cache-dependency-path: backend/go.sum}
       - run: go test ./...
       - run: go build ./...
+      # The tenant isolation and the administrative boundary are only proven
+      # against a real PostgreSQL, so the integration suite runs in CI too.
+      - name: PostgreSQL integration tests
+        run: go test ./internal/storage/postgres -run TestIntegration -v
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55432/postgres
   web:
     runs-on: ubuntu-latest
     defaults: {run: {working-directory: apps/web}}
