@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 
@@ -12,6 +13,13 @@ import (
 )
 
 var ErrInvalidAuth0Token = errors.New("invalid Auth0 token")
+
+const (
+	// defaultHTTPTimeout bounds the discovery request and the JWKS refresh, so
+	// a slow issuer cannot block the startup or a request forever.
+	defaultHTTPTimeout = 10 * time.Second
+	discoveryTimeout   = 10 * time.Second
+)
 
 type oidcTokenVerifier interface {
 	Verify(ctx context.Context, rawToken string) (*oidc.IDToken, error)
@@ -31,10 +39,20 @@ func NewAuth0Verifier(ctx context.Context, config Auth0Config, client *http.Clie
 		return nil, fmt.Errorf("%w: context is nil", ErrInvalidAuth0Config)
 	}
 	if client == nil {
-		client = http.DefaultClient
+		client = &http.Client{Timeout: defaultHTTPTimeout}
+	} else if client.Timeout == 0 {
+		// The key set refresh drops the context deadline, so the client
+		// timeout is the only bound left on it. A client without one would
+		// let a slow issuer hold the refresh forever.
+		cloned := *client
+		cloned.Timeout = defaultHTTPTimeout
+		client = &cloned
 	}
 
-	provider, err := oidc.NewProvider(oidc.ClientContext(ctx, client), config.Issuer)
+	discoveryContext, cancel := context.WithTimeout(ctx, discoveryTimeout)
+	defer cancel()
+
+	provider, err := oidc.NewProvider(oidc.ClientContext(discoveryContext, client), config.Issuer)
 	if err != nil {
 		return nil, fmt.Errorf("%w: provider discovery failed: %v", ErrInvalidAuth0Config, err)
 	}

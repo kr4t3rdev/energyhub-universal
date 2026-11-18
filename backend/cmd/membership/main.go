@@ -133,7 +133,7 @@ func run(args []string) error {
 
 	pool, err := pgxpool.New(ctx, config.adminDatabaseURL)
 	if err != nil {
-		return fmt.Errorf("connect admin database: %w", err)
+		return fmt.Errorf("connect admin database: %w", postgres.RedactConnectionError(err, config.adminDatabaseURL))
 	}
 	defer pool.Close()
 

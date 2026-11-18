@@ -84,8 +84,14 @@ func TestLoadConfigRejectsNilEnvironmentReader(t *testing.T) {
 	}
 }
 
-func TestValidateLoopbackAddrAcceptsLocalhost(t *testing.T) {
-	if err := validateLoopbackAddr("localhost:8089"); err != nil {
+func TestValidateLoopbackAddrRejectsLocalhostName(t *testing.T) {
+	if err := validateLoopbackAddr("localhost:8089"); err == nil {
+		t.Fatal("err = nil, want a literal loopback address error")
+	}
+}
+
+func TestValidateLoopbackAddrAcceptsLoopbackIP(t *testing.T) {
+	if err := validateLoopbackAddr("127.0.0.1:8089"); err != nil {
 		t.Fatal(err)
 	}
 }

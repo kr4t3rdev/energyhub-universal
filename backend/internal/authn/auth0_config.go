@@ -54,7 +54,7 @@ func (c Auth0Config) Validate() error {
 		issuer.Fragment != "" {
 		return fmt.Errorf("%w: issuer must be a URL without credentials, query, or fragment", ErrInvalidAuth0Config)
 	}
-	if issuer.Scheme != "https" && !(issuer.Scheme == "http" && isLoopbackHost(issuer.Hostname())) {
+	if issuer.Scheme != "https" && !(issuer.Scheme == "http" && isLoopbackIP(issuer.Hostname())) {
 		return fmt.Errorf("%w: issuer must be an HTTPS URL; plain HTTP is only allowed for loopback development issuers", ErrInvalidAuth0Config)
 	}
 	if strings.ContainsAny(c.Audience, " \t\r\n") {
@@ -63,10 +63,21 @@ func (c Auth0Config) Validate() error {
 	return nil
 }
 
-func isLoopbackHost(host string) bool {
-	if strings.EqualFold(host, "localhost") {
-		return true
+// UsesLoopbackHTTPIssuer reports whether the issuer is the local development
+// issuer over plain HTTP. The API must then listen on a loopback address, so
+// the development credentials never leave the machine.
+func (c Auth0Config) UsesLoopbackHTTPIssuer() bool {
+	issuer, err := url.Parse(c.Issuer)
+	if err != nil || issuer.Host == "" {
+		return false
 	}
+	return issuer.Scheme == "http" && isLoopbackIP(issuer.Hostname())
+}
+
+// isLoopbackIP only accepts a literal loopback address. A name such as
+// localhost depends on DNS and on the hosts file, so it is not proof that the
+// traffic stays on the machine.
+func isLoopbackIP(host string) bool {
 	ip := net.ParseIP(host)
 	return ip != nil && ip.IsLoopback()
 }

@@ -95,7 +95,6 @@ func TestAuth0ConfigAcceptsLoopbackIssuerForDevelopment(t *testing.T) {
 	}{
 		{name: "ipv4 loopback", issuer: "http://127.0.0.1:8089"},
 		{name: "ipv6 loopback", issuer: "http://[::1]:8089"},
-		{name: "localhost", issuer: "http://localhost:8089"},
 		{name: "loopback over tls", issuer: "https://127.0.0.1:8443"},
 	}
 
@@ -106,6 +105,25 @@ func TestAuth0ConfigAcceptsLoopbackIssuerForDevelopment(t *testing.T) {
 				t.Fatalf("err = %v, want nil", err)
 			}
 		})
+	}
+}
+
+func TestAuth0ConfigRejectsLocalhostNameForPlainHTTP(t *testing.T) {
+	config := Auth0Config{Issuer: "http://localhost:8089", Audience: "https://api.energyhub.local"}
+	if err := config.Validate(); !errors.Is(err, ErrInvalidAuth0Config) {
+		t.Fatalf("err = %v, want ErrInvalidAuth0Config", err)
+	}
+}
+
+func TestAuth0ConfigDetectsTheLoopbackDevelopmentIssuer(t *testing.T) {
+	loopback := Auth0Config{Issuer: "http://127.0.0.1:8089", Audience: "api"}
+	if !loopback.UsesLoopbackHTTPIssuer() {
+		t.Fatal("loopback HTTP issuer not detected")
+	}
+
+	secure := Auth0Config{Issuer: "https://energyhub.eu.auth0.com/", Audience: "api"}
+	if secure.UsesLoopbackHTTPIssuer() {
+		t.Fatal("secure issuer reported as loopback development issuer")
 	}
 }
 

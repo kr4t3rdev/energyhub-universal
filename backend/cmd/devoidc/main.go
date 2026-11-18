@@ -113,12 +113,9 @@ func validateLoopbackAddr(addr string) error {
 	if err != nil {
 		return fmt.Errorf("DEV_OIDC_ADDR must be host:port: %w", err)
 	}
-	if strings.EqualFold(host, "localhost") {
-		return nil
-	}
 	ip := net.ParseIP(host)
 	if ip == nil || !ip.IsLoopback() {
-		return fmt.Errorf("DEV_OIDC_ADDR must listen on a loopback address, got %q", host)
+		return fmt.Errorf("DEV_OIDC_ADDR must listen on a literal loopback address, got %q", host)
 	}
 	return nil
 }
@@ -148,6 +145,10 @@ func run() error {
 		Addr:              loaded.addr,
 		Handler:           issuer.Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    8 << 10,
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -174,15 +175,19 @@ func run() error {
 	}
 }
 
+// printInstructions shows how to use the development issuer without writing
+// the secrets to the log: the values live in the environment of the process
+// and in the development defaults.
 func printInstructions(loaded config, issuerURL string) {
 	log.Printf("development OIDC issuer listening on %s (loopback only, never deploy this)", issuerURL)
 	log.Printf("AUTH0_ISSUER=%s", issuerURL)
 	log.Printf("AUTH0_AUDIENCE=%s", loaded.audience)
 	log.Printf("SYSTEM_ADMIN_SUBJECT=%s", loaded.adminSubject)
-	log.Printf("client_id=%s client_secret=%s", loaded.clientID, loaded.clientSecret)
-	log.Printf("admin user: username=%s password=%s", loaded.adminUsername, loaded.adminPassword)
-	log.Printf("regular user: username=%s password=%s", loaded.userUsername, loaded.userPassword)
+	log.Printf("client id: %s (secret in DEV_OIDC_CLIENT_SECRET)", loaded.clientID)
+	log.Printf("admin user: %s (password in DEV_OIDC_ADMIN_PASSWORD)", loaded.adminUsername)
+	log.Printf("regular user: %s (password in DEV_OIDC_USER_PASSWORD)", loaded.userUsername)
+	log.Printf("the secrets are not logged: the command below reads them from the environment and falls back to the development defaults")
 	log.Printf("request a token with:")
-	log.Printf(`  curl -s -X POST %s/oauth/token -H 'Content-Type: application/json' -d '{"client_id":"%s","client_secret":"%s","username":"%s","password":"%s","audience":"%s"}'`,
-		issuerURL, loaded.clientID, loaded.clientSecret, loaded.adminUsername, loaded.adminPassword, loaded.audience)
+	log.Printf(`  curl -s -X POST %s/oauth/token -H 'Content-Type: application/json' -d "{\"client_id\":\"%s\",\"client_secret\":\"${DEV_OIDC_CLIENT_SECRET:-%s}\",\"username\":\"%s\",\"password\":\"${DEV_OIDC_ADMIN_PASSWORD:-%s}\",\"audience\":\"%s\"}"`,
+		issuerURL, loaded.clientID, defaultClientSecret, loaded.adminUsername, defaultAdminPassword, loaded.audience)
 }

@@ -34,6 +34,10 @@ func organizationsHandler(memberships authz.MembershipReader) http.Handler {
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
+		// The response depends on the verified subject, so no shared cache may
+		// keep it.
+		writer.Header().Set("Cache-Control", "no-store")
+		writer.Header().Set("Vary", "Authorization")
 		writer.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(writer).Encode(contracts.CurrentUser{
 			Subject:       principal.Subject,

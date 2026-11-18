@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -33,6 +34,10 @@ const (
 	defaultListenAddr  = ":8080"
 	startupPingTimeout = 5 * time.Second
 	shutdownTimeout    = 5 * time.Second
+	readTimeout        = 15 * time.Second
+	writeTimeout       = 30 * time.Second
+	idleTimeout        = 60 * time.Second
+	maxHeaderBytes     = 8 << 10
 )
 
 func main() {
@@ -92,7 +97,15 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	router, cleanup, err := buildRouter(ctx, os.Getenv)
+	config, err := loadAPIConfig(os.Getenv)
+	if err != nil {
+		return err
+	}
+	if config.authenticationEnabled() && config.auth.UsesLoopbackHTTPIssuer() && !isLoopbackListenAddr(addr) {
+		return fmt.Errorf("the development issuer over plain HTTP requires a loopback listen address, got %q", addr)
+	}
+
+	router, cleanup, err := buildRouter(ctx, config)
 	if err != nil {
 		return err
 	}
@@ -102,6 +115,10 @@ func run() error {
 		Addr:              addr,
 		Handler:           router,
 		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
+		MaxHeaderBytes:    maxHeaderBytes,
 	}
 
 	errorChannel := make(chan error, 1)
@@ -125,14 +142,24 @@ func run() error {
 	}
 }
 
+// isLoopbackListenAddr reports whether the server binds a loopback address.
+// An empty host means every interface, which is not loopback.
+func isLoopbackListenAddr(addr string) bool {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return false
+	}
+	if host == "" {
+		return false
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
 // buildRouter wires the router and returns the cleanup that releases the
 // resources it owns. The database pool stays open for the lifetime of the
 // server, so it is not closed here.
-func buildRouter(ctx context.Context, getenv func(string) string) (http.Handler, func(), error) {
-	config, err := loadAPIConfig(getenv)
-	if err != nil {
-		return nil, func() {}, err
-	}
+func buildRouter(ctx context.Context, config apiConfig) (http.Handler, func(), error) {
 	if !config.authenticationEnabled() {
 		log.Printf("authentication is not configured: only /health is exposed")
 		return httpapi.NewRouter(), func() {}, nil
@@ -140,7 +167,7 @@ func buildRouter(ctx context.Context, getenv func(string) string) (http.Handler,
 
 	pool, err := pgxpool.New(ctx, config.databaseURL)
 	if err != nil {
-		return nil, func() {}, fmt.Errorf("connect database: %w", err)
+		return nil, func() {}, fmt.Errorf("connect database: %w", postgres.RedactConnectionError(err, config.databaseURL))
 	}
 	cleanup := func() { pool.Close() }
 

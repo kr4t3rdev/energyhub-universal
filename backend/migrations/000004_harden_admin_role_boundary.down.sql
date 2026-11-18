@@ -116,6 +116,21 @@ GRANT SELECT ON public.organizations, public.organization_memberships TO energyh
 
 -- Drop the audit trail -----------------------------------------------------------
 
+-- The administrative write records are archived before the table is dropped:
+-- a rollback must not erase the evidence of who changed the memberships. The
+-- archive lives in the public schema so it survives the rollback of the app
+-- schema, which removes the admin functions and the audit trail with it.
+DO $$
+BEGIN
+    IF to_regclass('app.admin_audit_log') IS NULL THEN
+        RETURN;
+    END IF;
+    EXECUTE 'DROP TABLE IF EXISTS public.admin_audit_log_archive_000004';
+    EXECUTE 'CREATE TABLE public.admin_audit_log_archive_000004 (LIKE app.admin_audit_log EXCLUDING IDENTITY)';
+    EXECUTE 'INSERT INTO public.admin_audit_log_archive_000004 SELECT * FROM app.admin_audit_log';
+END
+$$;
+
 DROP TABLE IF EXISTS app.admin_audit_log;
 
 COMMIT;

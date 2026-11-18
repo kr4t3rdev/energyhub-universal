@@ -35,6 +35,12 @@ Ejecutar como un único job de despliegue: no hay coordinación entre runners co
 - Cada escritura administrativa deja una traza en `app.admin_audit_log` con el actor (`session_user`), la operación y el objetivo.
 - Crear una organización que ya existe es un conflicto explícito, no un renombrado silencioso.
 
+`000005_revoke_leftover_protected_table_privileges` cierra el hueco que quedó en `000004`:
+
+- La detección de privilegios sobrantes de `000004` no incluía `TRUNCATE`, y el RLS no se aplica a `TRUNCATE`: un rol con solo ese privilegio podía borrar las tablas de tenants. `000005` revoca `INSERT`, `UPDATE`, `DELETE` y `TRUNCATE` sobre `organizations`, `organization_memberships` y `app.admin_audit_log` a todos los roles que no heredan `energyhub_owner`, y falla cerrado si queda alguno.
+- La propiedad de las funciones administrativas se vuelve a afirmar sobre `energyhub_owner`, con una comprobación posterior. `CREATE OR REPLACE` conserva el propietario anterior, así que sin esta afirmación una restauración de la base podía dejar las funciones en manos del rol que las instaló, que podría reemplazar su cuerpo y quitarse la comprobación de capacidad.
+- `000005` es una migración nueva y no una edición de `000004`, porque una migración ya aplicada no se edita.
+
 Antes de aplicar las migraciones hay que crear y normalizar los roles del cluster (una vez, con un superusuario y contra la base de datos de la aplicación):
 
 ```sh
@@ -48,6 +54,8 @@ El bootstrap normaliza los atributos de los roles en cada ejecución, revoca las
 psql "$DATABASE_ADMIN_URL" -c "ALTER ROLE energyhub_runtime PASSWORD '$RUNTIME_PASSWORD'"
 psql "$DATABASE_ADMIN_URL" -c "ALTER ROLE energyhub_admin PASSWORD '$ADMIN_PASSWORD'"
 ```
+
+Las comprobaciones del bootstrap resuelven la pertenencia completa, no solo la directa: un rol es miembro de otro de forma transitiva, y un superusuario es miembro de todos. Por eso una cadena como `GRANT energyhub_owner TO helper; GRANT helper TO energyhub_runtime` no aparece en `pg_auth_members` pero sí concede a la credencial de la API los derechos de propietario, y por eso el bootstrap falla cerrado en ese caso. El mismo control cubre `energyhub_admin`: compartir la credencial administrativa con otro rol de login crearía una segunda credencial de escritura sin que nadie lo anunciara.
 
 | Rol | Uso |
 | --- | --- |

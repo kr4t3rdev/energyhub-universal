@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -30,6 +31,9 @@ var ErrInvalidConfig = errors.New("invalid development issuer configuration")
 const (
 	defaultTokenTTL = time.Hour
 	signingKeyID    = "dev-signing-key"
+	// maxTokenRequestBytes bounds the token request body, so a local client
+	// cannot exhaust the memory of the development issuer.
+	maxTokenRequestBytes = 16 << 10
 )
 
 // User is a development identity. Subjects are synthetic and never come from
@@ -156,18 +160,29 @@ func validateLoopbackURL(raw string) error {
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
 		return fmt.Errorf("%w: issuer must use http or https", ErrInvalidConfig)
 	}
-	if !isLoopbackHost(parsed.Hostname()) {
-		return fmt.Errorf("%w: issuer must point to a loopback address", ErrInvalidConfig)
+	// The advertised issuer must be a literal loopback address. A name such
+	// as localhost depends on DNS and on the hosts file, so it is not proof
+	// that the traffic stays on the machine.
+	if !isLoopbackIP(parsed.Hostname()) {
+		return fmt.Errorf("%w: issuer must point to a literal loopback address", ErrInvalidConfig)
 	}
 	return nil
 }
 
+// isLoopbackIP reports whether the host is a literal loopback address.
+func isLoopbackIP(host string) bool {
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
+// isLoopbackHost reports whether the host names the local machine. It is used
+// for the Host header, which the client chooses, so it accepts the localhost
+// name for convenience; the peer address is what the security decision uses.
 func isLoopbackHost(host string) bool {
 	if strings.EqualFold(host, "localhost") {
 		return true
 	}
-	ip := net.ParseIP(host)
-	return ip != nil && ip.IsLoopback()
+	return isLoopbackIP(host)
 }
 
 // AdminSubject returns the subject flagged as the development administrator.
@@ -205,7 +220,9 @@ func (i *Issuer) PublicKey() crypto.PublicKey {
 // Handler returns the development issuer endpoints.
 func (i *Issuer) Handler() http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if !isLoopbackHost(hostOnly(request.Host)) {
+		// The Host header is chosen by the client, so the peer address is the
+		// check that matters. The listener is bound to loopback as well.
+		if !isLoopbackHost(hostOnly(request.Host)) || !isLoopbackPeer(request.RemoteAddr) {
 			writeError(writer, http.StatusForbidden, "forbidden")
 			return
 		}
@@ -233,6 +250,16 @@ func hostOnly(host string) string {
 		return parsedHost
 	}
 	return host
+}
+
+// isLoopbackPeer reports whether the request came from the local machine.
+func isLoopbackPeer(remoteAddr string) bool {
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		host = remoteAddr
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 func (i *Issuer) writeDiscovery(writer http.ResponseWriter) {
@@ -267,8 +294,31 @@ type tokenRequest struct {
 }
 
 func (i *Issuer) handleToken(writer http.ResponseWriter, request *http.Request) {
+	body := http.MaxBytesReader(writer, request.Body, maxTokenRequestBytes)
+	decoder := json.NewDecoder(body)
+	decoder.DisallowUnknownFields()
+
 	var payload tokenRequest
-	if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
+	if err := decoder.Decode(&payload); err != nil {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			writeError(writer, http.StatusRequestEntityTooLarge, "request_too_large")
+			return
+		}
+		writeError(writer, http.StatusBadRequest, "invalid_request")
+		return
+	}
+
+	// The body must hold exactly one JSON value. Without this check a valid
+	// object followed by more content would be accepted, and the size limit
+	// would not be applied to the trailing part.
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			writeError(writer, http.StatusRequestEntityTooLarge, "request_too_large")
+			return
+		}
 		writeError(writer, http.StatusBadRequest, "invalid_request")
 		return
 	}
@@ -294,6 +344,7 @@ func (i *Issuer) handleToken(writer http.ResponseWriter, request *http.Request) 
 		return
 	}
 
+	writer.Header().Set("Cache-Control", "no-store")
 	writeJSON(writer, http.StatusOK, map[string]any{
 		"access_token": rawToken,
 		"token_type":   "Bearer",

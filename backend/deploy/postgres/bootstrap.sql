@@ -60,6 +60,10 @@ $$;
 -- A role that already existed keeps its attributes unless they are set here.
 -- The attributes are written on every run so a role that was created wider by
 -- mistake loses the extra privileges.
+--
+-- The REVOKE statements below produce a warning when the membership did not
+-- exist, which is the normal case. Errors still stop the script.
+SET client_min_messages TO error;
 
 ALTER ROLE energyhub_membership_admin NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
 ALTER ROLE energyhub_admin_capability NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
@@ -120,6 +124,56 @@ BEGIN
        AND member.rolname IN ('energyhub_runtime', 'energyhub_admin', 'energyhub_membership_admin');
     IF offending IS NOT NULL THEN
         RAISE EXCEPTION 'application roles must not be members of energyhub_owner: %', offending;
+    END IF;
+
+    -- The checks above only see direct memberships. A chain such as
+    -- "GRANT energyhub_owner TO helper; GRANT helper TO energyhub_admin" gives
+    -- the administrative credential the rights of the owner without appearing
+    -- in pg_auth_members, so the application roles are checked with
+    -- pg_has_role, which resolves the whole chain. A role is always a member
+    -- of itself, so every group excludes the role that is being checked.
+    SELECT string_agg(role_name.rolname, ', ' ORDER BY role_name.rolname)
+      INTO offending
+      FROM pg_roles AS role_name
+     WHERE role_name.rolname IN (
+               'energyhub_runtime',
+               'energyhub_admin',
+               'energyhub_membership_admin',
+               'energyhub_admin_capability'
+           )
+       AND (
+               pg_has_role(role_name.rolname, 'energyhub_owner', 'member')
+            OR (
+                   role_name.rolname NOT IN ('energyhub_membership_admin', 'energyhub_admin')
+                   AND pg_has_role(role_name.rolname, 'energyhub_membership_admin', 'member')
+               )
+            OR (
+                   role_name.rolname NOT IN ('energyhub_admin_capability', 'energyhub_admin')
+                   AND pg_has_role(role_name.rolname, 'energyhub_admin_capability', 'member')
+               )
+           );
+    IF offending IS NOT NULL THEN
+        RAISE EXCEPTION 'application roles hold an unexpected role membership: %', offending;
+    END IF;
+
+    -- Only the administrative credential may hold the administrative groups.
+    -- The membership is transitive, so granting energyhub_admin to another
+    -- login role would silently create a second administrative credential.
+    -- A superuser is a member of every role, so it is not a shared
+    -- credential: it is the cluster administrator.
+    SELECT string_agg(role_name.rolname, ', ' ORDER BY role_name.rolname)
+      INTO offending
+      FROM pg_roles AS role_name
+     WHERE role_name.rolcanlogin
+       AND NOT role_name.rolsuper
+       AND role_name.rolname <> 'energyhub_admin'
+       AND (
+               pg_has_role(role_name.rolname, 'energyhub_membership_admin', 'member')
+            OR pg_has_role(role_name.rolname, 'energyhub_admin_capability', 'member')
+            OR pg_has_role(role_name.rolname, 'energyhub_admin', 'member')
+           );
+    IF offending IS NOT NULL THEN
+        RAISE EXCEPTION 'unexpected login roles with administrative privileges: %', offending;
     END IF;
 END
 $$;

@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -31,6 +32,9 @@ var ErrRuntimeCredentialForMigrations = errors.New("the runtime credential canno
 // runtimeRoleName is the role the API uses to read memberships.
 const runtimeRoleName = "energyhub_runtime"
 
+// roleInspectionTimeout bounds the query that reads the effective role.
+const roleInspectionTimeout = 5 * time.Second
+
 // migrationDatabaseURL resolves the privileged connection used to apply
 // migrations. The runtime credential of the API is never accepted here.
 func migrationDatabaseURL(getenv func(string) string) string {
@@ -42,6 +46,10 @@ func migrationDatabaseURL(getenv func(string) string) string {
 
 // validateMigrationCredential refuses a connection that would leave the
 // database owned by the credential the API reads with.
+//
+// The userinfo of the URL is only a first diagnostic: the effective role can
+// come from the environment or from the server configuration, so the connected
+// role is checked again once the connection is open.
 func validateMigrationCredential(databaseURL string) error {
 	parsed, err := url.Parse(databaseURL)
 	if err != nil {
@@ -54,6 +62,18 @@ func validateMigrationCredential(databaseURL string) error {
 		return ErrRuntimeCredentialForMigrations
 	}
 	return nil
+}
+
+// connectedRole returns the role the session actually runs as.
+func connectedRole(ctx context.Context, inspector postgres.RoleInspector) (string, error) {
+	if inspector == nil {
+		return "", errors.New("the migration connection is required")
+	}
+	var role string
+	if err := inspector.QueryRow(ctx, "SELECT current_user").Scan(&role); err != nil {
+		return "", fmt.Errorf("inspect the migration role: %w", err)
+	}
+	return role, nil
 }
 
 func run() error {
@@ -78,6 +98,20 @@ func run() error {
 		return fmt.Errorf("connect database: %w", err)
 	}
 	defer pool.Close()
+
+	// The URL userinfo is not proof of the effective role: the connection may
+	// resolve it from the environment or from the server configuration. The
+	// role that is really connected is the one that would own the objects, so
+	// it is the one that is checked.
+	inspectContext, cancelInspect := context.WithTimeout(ctx, roleInspectionTimeout)
+	role, err := connectedRole(inspectContext, postgres.NewPgxRoleInspector(pool))
+	cancelInspect()
+	if err != nil {
+		return err
+	}
+	if role == runtimeRoleName {
+		return ErrRuntimeCredentialForMigrations
+	}
 
 	result, err := postgres.Migrate(ctx, postgres.NewMigrationStore(pool), plan)
 	if err != nil {

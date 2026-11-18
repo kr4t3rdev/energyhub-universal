@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"strings"
@@ -352,8 +353,10 @@ func integrationSuperuserURL(t *testing.T) string {
 	return superuserURL
 }
 
+// isLoopbackIP reports whether the host is a literal loopback address.
 func isLoopbackIP(host string) bool {
-	return host == "127.0.0.1" || host == "::1" || host == "0:0:0:0:0:0:0:1"
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 // newIntegrationEnvironment creates the shared roles, a throwaway database and
