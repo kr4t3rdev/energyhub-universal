@@ -1,6 +1,6 @@
 # Diseño de la siguiente fase backend
 
-Estado: diseño aprobado para contract-first; modelos de respuesta y verifier Auth0 implementados. El verifier aún no se registra en rutas protegidas; no hay endpoints de datos ni acceso a PostgreSQL.
+Estado: diseño aprobado e implementado en el alcance de membresías. Hay un verifier Auth0 conectado a una ruta protegida (`GET /v1/organizations`) y acceso a PostgreSQL con dos credenciales separadas (runtime y admin). No hay endpoints de dispositivos, telemetría ni datos reales.
 
 ## Límites de la entrega actual
 
@@ -58,9 +58,9 @@ La conversión de una identidad ya verificada a ese scope está en `backend/inte
 
 La extracción de credenciales está aislada en `backend/internal/authn/bearer.go`. `BearerToken` acepta exactamente un header Bearer y no registra ni valida su contenido; `Authenticate` conecta esa extracción con un `Verifier` inyectado; `Middleware` coloca únicamente el principal verificado en el contexto downstream y responde genéricamente ante errores. `Auth0Verifier` implementa ese puerto mediante discovery OIDC y JWKS cacheado por la librería. Solo extrae `sub`; las organizaciones y roles se resolverán en el servidor.
 
-`Auth0Verifier` requiere `AUTH0_ISSUER` y `AUTH0_AUDIENCE` desde el entorno. `NewAuth0Verifier` todavía no se conecta a `main` ni a `NewRouter`, para no romper `/health` ni declarar rutas protegidas antes de disponer de configuración de despliegue y pruebas de autorización.
+`Auth0Verifier` requiere `AUTH0_ISSUER` y `AUTH0_AUDIENCE` desde el entorno. `cmd/api` lo instancia solo cuando hay issuer, audience y `DATABASE_URL`; sin esa configuración el proceso expone únicamente `/health` y no registra ninguna ruta protegida.
 
-La composición HTTP base añade `X-Request-ID` generado por el servidor y lo conserva en el contexto mediante `backend/internal/platform/httpapi/request.go`. `WriteErrorResponse` ofrece el sobre `contracts.ErrorResponse` común para futuros handlers; todavía no hay endpoints de datos que lo utilicen.
+La composición HTTP base añade `X-Request-ID` generado por el servidor y lo conserva en el contexto mediante `backend/internal/platform/httpapi/request.go`. `WriteErrorResponse` ofrece el sobre `contracts.ErrorResponse` común; la ruta protegida `/v1/organizations` ya lo usa, también en los errores de autenticación, siempre con `X-Request-ID` y sin detalles internos.
 
 ## Membresías en PostgreSQL
 
@@ -74,7 +74,7 @@ La composición HTTP base añade `X-Request-ID` generado por el servidor y lo co
 
 `backend/migrations/000001_create_organizations_and_memberships.up.sql` crea `organizations` y `organization_memberships` con `organization_id NOT NULL`, clave primaria `(organization_id, subject)`, `ON DELETE CASCADE` e índice por `subject`. El `CHECK` de roles se contrasta con el contrato mediante una prueba que lee la migración.
 
-El runner explícito está en `backend/cmd/migrate` y `backend/internal/storage/postgres/migrate.go`. `LoadMigrations` valida nombres, cuerpos, duplicados y orden; `Migrate` crea `schema_migrations`, omite versiones ya aplicadas y se niega a continuar si la base tiene una versión desconocida para el binario. `PgxMigrationStore` ejecuta el SQL de cada archivo con protocolo simple (para admitir varias sentencias) y registra la versión en la misma transacción. La API no ejecuta migraciones; solo se aplican con `DATABASE_URL=... go run ./cmd/migrate`.
+El runner explícito está en `backend/cmd/migrate` y `backend/internal/storage/postgres/migrate.go`. `LoadMigrations` valida nombres, cuerpos, duplicados y orden; `Migrate` crea `schema_migrations`, omite versiones ya aplicadas y se niega a continuar si la base tiene una versión desconocida para el binario. `PgxMigrationStore` ejecuta el SQL de cada archivo con protocolo simple (para admitir varias sentencias) y registra la versión en la misma transacción. La API no ejecuta migraciones; solo se aplican con `MIGRATION_DATABASE_URL=... go run ./cmd/migrate` (la variable cae a `DATABASE_URL` si no se define).
 
 ## RLS y administración
 
@@ -93,7 +93,7 @@ El modelo actual tiene dos credenciales y dos fronteras:
 
 `SYSTEM_ADMIN_SUBJECT` es el único subject autorizado a crear, actualizar o revocar membresías. Está vacío por defecto y la autorización falla cerrada. `AdminMembershipService` valida organización, subject objetivo y rol antes de llamar al puerto; el writer vuelve a comparar el admin configurado antes de abrir la transacción, y no se invoca para un principal que no sea el admin.
 
-`NewMembershipReader`/`NewMembershipWriter` todavía no se conectan a `main` ni se registran rutas administrativas. El aislamiento ya está verificado contra una instancia PostgreSQL real: la prueba `TestIntegrationTenantIsolationAndAdminWrites` crea los roles, aplica las migraciones y comprueba que el rol runtime no escribe, no llama a las funciones admin y no ve otras membresías, mientras que el rol admin escribe solo a través de las funciones. Se activa con `TEST_DATABASE_URL` apuntando a un superusuario.
+`cmd/api` conecta `NewMembershipReader` con el pool runtime para la ruta protegida y `cmd/membership` conecta `NewMembershipWriter` y `NewOrganizationWriter` con el pool admin para la administración por CLI. El aislamiento está verificado contra una instancia PostgreSQL real: la prueba `TestIntegrationTenantIsolationAndAdminWrites` crea los roles, aplica las migraciones y comprueba en 9 subcasos que el rol runtime no escribe, no llama a las funciones admin, no ve otras membresías y que el rol admin escribe solo a través de las funciones (incluida la creación de organizaciones). Se activa con `TEST_DATABASE_URL` apuntando a un superusuario.
 
 ## Composición HTTP y ruta protegida
 
@@ -118,6 +118,18 @@ El CLI actúa como el admin del sistema configurado y usa la credencial administ
 
 Mientras no exista un tenant Auth0, `backend/scripts/dev-stack.sh` levanta el entorno de desarrollo: roles de PostgreSQL, migraciones, emisor OIDC local y las variables de entorno para la API. `backend/cmd/devoidc` arranca el emisor en loopback con un usuario admin precreado (`dev|admin`); `backend/dev.env.example` documenta sus variables. Cuando exista el tenant real, solo cambian `AUTH0_ISSUER`, `AUTH0_AUDIENCE` y `SYSTEM_ADMIN_SUBJECT`: el verificador no cambia.
 
+## Rotación de credenciales
+
+La frontera de escritura depende de la credencial de PostgreSQL, así que su rotación es parte de la seguridad y no una tarea de operación opcional:
+
+- Las dos credenciales nunca se comparten: `DATABASE_URL` (rol `energyhub_runtime`, solo lectura) vive en el proceso API; `ADMIN_DATABASE_URL` (rol `energyhub_admin`) vive solo en el entorno desde el que se ejecuta `cmd/membership`. El proceso API no lee la credencial administrativa.
+- La credencial admin no se entrega a procesos de larga vida ni a servicios que atiendan peticiones de usuarios: la administración es una operación puntual de consola.
+- Rotación del rol admin: `ALTER ROLE energyhub_admin PASSWORD ...` y actualización del secreto del CLI en el mismo cambio. PostgreSQL conserva una sola contraseña por rol, así que al cambiarla la anterior queda invalidada de inmediato; no hay ventana con dos contraseñas válidas.
+- Rotación del rol runtime: mismo procedimiento y reinicio de la API, que vuelve a hacer el ping al arrancar. No hay escrituras en la base que puedan quedar a medias, porque la API nunca escribe.
+- `SYSTEM_ADMIN_SUBJECT` no cambia al rotar credenciales: es el `sub` del usuario admin del sistema en el proveedor OIDC. Solo cambia si el proveedor emite otro subject para la cuenta admin.
+- Ninguna credencial se escribe en el repositorio ni en un `.env` versionado; el gestor de secretos es responsabilidad del despliegue y cada entorno entrega sus propios valores.
+- La cadencia y el procedimiento los fija la operación del despliegue; la recomendación por defecto es rotar cada 90 días y de inmediato ante cualquier sospecha de exposición. La rotación no cambia la frontera: sigue siendo la pertenencia al grupo `energyhub_membership_admin` la que habilita las funciones de escritura.
+
 ## Puerta de entrada antes de datos reales
 
 No se implementará el adaptador HTTP ni se sustituirá la fixture hasta disponer de:
@@ -137,10 +149,12 @@ No se implementará el adaptador HTTP ni se sustituirá la fixture hasta dispone
 - Las pruebas están en `backend/internal/contracts/overview_test.go`.
 - La frontera tenant-aware pasa `go test ./internal/site` con 84.6% de cobertura.
 - La autorización de pertenencia pasa `go test ./internal/authz` con 100% de cobertura.
-- La extracción Bearer pasa `go test ./internal/authn` con 100% de cobertura.
-- El verifier Auth0 pasa pruebas con discovery/JWKS local TLS; cobertura total de `authn`: 95.7%.
-- La base HTTP pasa `go test ./internal/platform/httpapi` con 96.6% de cobertura; la rama de fallo del generador aleatorio se prueba mediante seam inyectable.
+- La extracción Bearer pasa `go test ./internal/authn`; cobertura total del paquete `authn`: 96.2%.
+- El verifier Auth0 pasa pruebas con discovery/JWKS local TLS y contra el emisor del paquete `internal/devoidc`.
+- La base HTTP pasa `go test ./internal/platform/httpapi` con 93.9% de cobertura; la rama de fallo del generador aleatorio se prueba mediante seam inyectable.
 - El lector PostgreSQL de membresías pasa `go test ./internal/storage/postgres` con 100% de cobertura, sin base real ni red.
 - RLS y administración pasan `go test ./internal/authz ./internal/storage/postgres` con 100% de cobertura: solo `SYSTEM_ADMIN_SUBJECT` llega al writer, fallo cerrado sin configuración, y el SQL RLS se contrasta leyendo la migración.
+- El emisor OIDC local pasa `go test ./internal/devoidc ./cmd/devoidc` con 82.0% de cobertura del paquete `devoidc`.
+- Verificación adicional del estado actual: `go test -race ./...` en verde y la integración real `TEST_DATABASE_URL=... go test ./internal/storage/postgres -run TestIntegration` en verde contra PostgreSQL 17.11.
 - El runner de migraciones pasa las mismas pruebas con 100% de cobertura: validación de nombres/orden/duplicados, transacciones, rollback y rechazo de versiones desconocidas. No se ejecutó contra una base real.
 - Los logs reproducibles están en `docs/evidence/backend-contract-first-2026-11-16/`.

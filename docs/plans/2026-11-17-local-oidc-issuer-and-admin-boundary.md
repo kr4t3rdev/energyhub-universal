@@ -1,7 +1,7 @@
 # Diseño — Emisor OIDC local y frontera de escritura admin
 
 Fecha: 2026-11-17
-Estado: aprobado por el usuario (frontera de admin: doble credencial + `SECURITY DEFINER`)
+Estado: aprobado por el usuario (frontera de admin: doble credencial + `SECURITY DEFINER`) e implementado en `1af7f21`, `568266f`, `5172f27` y `ca13558`. Pendiente: la prueba contra el tenant Auth0 real.
 
 ## Contexto
 
@@ -103,3 +103,28 @@ se mantiene como segunda barrera en la capa de aplicación (quién puede usar la
 - La base de datos local de desarrollo se crea y destruye con scripts locales; no hay datos reales.
 - Cuando exista el tenant Auth0: crear API, copiar `AUTH0_ISSUER`/`AUTH0_AUDIENCE`, crear el usuario
   admin, copiar su `sub` a `SYSTEM_ADMIN_SUBJECT` y ejecutar la misma prueba de integración.
+
+## Estado de implementación (2026-11-17)
+
+Commits que materializan el diseño:
+
+- `1af7f21`: emisor OIDC local (`internal/devoidc`, `cmd/devoidc`) y excepción de loopback en la
+  validación del issuer.
+- `568266f`: frontera de escritura admin por rol (`migrations/000003_secure_admin_writes.up.sql`,
+  `deploy/postgres/bootstrap.sql`) y writers que llaman a las funciones `app.*`.
+- `5172f27`: ruta protegida `GET /v1/organizations`, CLI de administración `cmd/membership`,
+  `MIGRATION_DATABASE_URL` en `cmd/migrate` y `scripts/dev-stack.sh`.
+- `61fc573`, `83e69b2`, `ca13558`: índice de evidencia, ignorado del hook `graphify` y cobertura
+  adicional (`storage/postgres` 100%, `httpapi` 93.9%).
+
+Verificado: `go test ./...`, `go vet ./...`, `go build ./...`, `go mod verify` y `go test -race ./...`
+en verde; integración real con 9 subcasos contra PostgreSQL 17.11; flujo de extremo a extremo
+registrado en `docs/evidence/backend-contract-first-2026-11-16/local-stack-e2e.md`.
+
+Pendiente:
+
+1. Tenant Auth0 real: crear la API, copiar `AUTH0_ISSUER`, `AUTH0_AUDIENCE` y `SYSTEM_ADMIN_SUBJECT`
+   y repetir la misma prueba. Solo cambia la configuración; el verificador no cambia.
+2. Verificar RLS contra la instancia PostgreSQL de despliegue (la prueba local ya pasa) y aplicar la
+   política de rotación de credenciales documentada en `docs/architecture/backend-next-phase.md`.
+3. Actualizar el plan de Notion cuando el conector vuelva a estar disponible.
