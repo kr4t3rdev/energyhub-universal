@@ -1,6 +1,6 @@
 # Evidencia — Stack local y flujo de extremo a extremo
 
-Fecha: 2026-11-17. PostgreSQL 17.11 (Homebrew), emisor OIDC de desarrollo, API local.
+Fecha: 2026-11-17 (actualizado 2026-11-18). PostgreSQL 17.11 (Homebrew), emisor OIDC de desarrollo, API local.
 
 ## Qué se probó
 
@@ -10,6 +10,11 @@ Fecha: 2026-11-17. PostgreSQL 17.11 (Homebrew), emisor OIDC de desarrollo, API l
 3. `cmd/membership` crea organizaciones y concede o revoca membresías usando la
    credencial administrativa.
 4. Un usuario sin membresía no ve las organizaciones de otro usuario.
+5. La credencial administrativa no puede leer ni escribir directamente las tablas
+   de tenants: solo puede ejecutar las funciones `app.*`.
+6. Las escrituras administrativas quedan registradas en `app.admin_audit_log`.
+7. La API se niega a arrancar con una credencial de base de datos superusuario o
+   con escritura, y con el emisor de desarrollo si no escucha en loopback.
 
 ## Comandos
 
@@ -19,7 +24,8 @@ PGPORT=55432 PGUSER=postgres bash scripts/dev-stack.sh
 ```
 
 El script crea los roles, aplica las migraciones, arranca el emisor local e
-imprime las variables de entorno para la API.
+imprime las variables de entorno para la API. La API del stack local escucha en
+`127.0.0.1:8080` y no recibe la credencial administrativa.
 
 ## Resultados observados
 
@@ -39,6 +45,9 @@ grant completed for organization "org-1"
 revoke completed for organization "org-1"
 ```
 
+Crear de nuevo la misma organización devuelve un conflicto explícito en lugar de
+renombrarla en silencio.
+
 Ruta protegida:
 
 | Petición | Resultado |
@@ -50,23 +59,58 @@ Ruta protegida:
 | `GET /v1/organizations` con token de `dev|admin` sin membresía | `200` con lista vacía |
 | `GET /v1/organizations` con token de `dev|admin` tras conceder `org-2` | `200` con `org-2` y rol `owner` |
 
+Las respuestas de la ruta protegida llevan `Cache-Control: no-store` y
+`Vary: Authorization`, también en los sobres de error, incluido el `401`: las
+cabeceras se fijan antes de la autenticación.
+
 Aislamiento entre tenants: tras conceder `org-2` solo a `dev|admin`, la petición
 de `dev|user-1` siguió devolviendo únicamente `org-1`.
+
+Frontera administrativa, con la credencial `energyhub_admin`:
+
+| Operación | Resultado |
+| --- | --- |
+| `SELECT` sobre `organizations` | `permission denied` |
+| `INSERT` sobre `organization_memberships` | `permission denied` |
+| `SELECT app.create_organization(...)` | `permission denied` sin el rol de capacidad |
+
+La traza de auditoría registra el actor, la operación y el objetivo de cada
+escritura administrativa.
+
+Arranque de la API:
+
+| Configuración | Resultado |
+| --- | --- |
+| Credencial de base de datos superusuario | el proceso no arranca |
+| Emisor de desarrollo con `LISTEN_ADDR=0.0.0.0:8080` | el proceso no arranca |
+| Emisor de desarrollo con `LISTEN_ADDR=127.0.0.1:8080` | arranca y expone la ruta protegida |
 
 ## Pruebas automatizadas
 
 - `internal/platform/httpapi`: 401 sin token, 401 con token inválido, 200 con las
   organizaciones del sujeto, 500 genérico si el reader falla y sin filtrar detalles
-  internos; las rutas protegidas no se registran sin verificador o reader.
+  internos; las rutas protegidas no se registran sin verificador o reader; las
+  respuestas de éxito y de error no se pueden cachear.
 - `internal/authn`: el middleware admite un respondedor de errores para mantener
-  el sobre JSON y sigue sin exponer detalles del verificador.
+  el sobre JSON y sigue sin exponer detalles del verificador; el issuer sobre
+  HTTP plano solo se acepta con una IP literal de loopback.
 - `cmd/api`: la configuración de autenticación y base de datos se exige en bloque;
-  sin configuración solo se expone `/health`.
+  sin configuración solo se expone `/health`; el emisor de desarrollo exige una
+  dirección de escucha loopback.
+- `cmd/devoidc`: la dirección debe ser una IP literal de loopback y el arranque no
+  imprime el secreto del cliente ni las contraseñas.
 - `cmd/membership`: análisis de comandos, validación de rol y requisitos de
   `ADMIN_DATABASE_URL` y `SYSTEM_ADMIN_SUBJECT`.
-- `cmd/migrate`: `MIGRATION_DATABASE_URL` tiene prioridad sobre `DATABASE_URL`.
-- `internal/storage/postgres`: prueba de integración real con 9 subcasos sobre el
-  aislamiento y la frontera administrativa.
+- `cmd/migrate`: `MIGRATION_DATABASE_URL` es obligatoria y el rol `energyhub_runtime`
+  se rechaza como migrador, tanto por el userinfo de la URL como por el rol
+  effective de la sesión.
+- `internal/storage/postgres`: prueba de integración real sobre el aislamiento y
+  la frontera administrativa, la auditoría, el conflicto de creación duplicada, el
+  rollback de `000004` y `000003` (con el archivo de auditoría archivado en vez de
+  borrado), el rollback de `000005`, la revocación de `TRUNCATE`, la propiedad de
+  los objetos y de las funciones administrativas en `energyhub_owner`, el fallo
+  cerrado del bootstrap ante una pertenencia transitiva o una credencial
+  administrativa compartida, y la migración ejecutada por un rol no superusuario.
 
 ## Límites explícitos
 
@@ -77,4 +121,11 @@ de `dev|user-1` siguió devolviendo únicamente `org-1`.
 - La administración es por CLI, no por HTTP: no existe todavía una superficie HTTP
   que conceda membresías.
 - Las credenciales del stack local son de desarrollo y no sirven fuera del entorno
-  local.
+  local. El script las imprime en la salida estándar, así que esa salida no debe
+  copiarse a un registro compartido.
+- `app.current_subject` es un GUC de sesión falsificable: quien tenga la credencial
+  runtime puede fijar un subject arbitrario. La credencial de base de datos es la
+  frontera de confianza de la lectura y la limitación está fijada por la prueba
+  `TestIntegrationDocumentsForgeableTenantContext`.
+- No hay rate limiting por IP ni por subject: sigue pendiente antes de exponer el
+  servicio a datos reales.

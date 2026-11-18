@@ -45,8 +45,11 @@ Emisor OIDC de desarrollo, fuera del camino de producción:
 - Guardarraíles: escucha solo en loopback; el binario se registra como herramienta de desarrollo y
   no se importa desde `cmd/api`; credenciales de desarrollo sintéticas, nunca valores reales.
 
-La configuración de Auth0 acepta `http://127.0.0.1` / `http://localhost` como única excepción a la
+La configuración de Auth0 acepta `http://127.0.0.1` como única excepción a la
 regla HTTPS, porque el emisor local es HTTP. Cualquier otro host sigue requiriendo HTTPS.
+> Actualización 2026-11-18: la excepción se restringió a una IP literal de loopback. `http://localhost`
+> se rechaza, porque depende de DNS y del archivo `hosts` y no prueba que el tráfico se quede en la
+> máquina. Ver `docs/architecture/backend-next-phase.md`.
 
 ### 2. Frontera de escritura admin en PostgreSQL — migración `000003`
 
@@ -128,3 +131,34 @@ Pendiente:
 2. Verificar RLS contra la instancia PostgreSQL de despliegue (la prueba local ya pasa) y aplicar la
    política de rotación de credenciales documentada en `docs/architecture/backend-next-phase.md`.
 3. Actualizar el plan de Notion cuando el conector vuelva a estar disponible.
+
+## Estado de implementación (2026-11-18)
+
+Seguimiento del diseño anterior, con dos commits adicionales:
+
+- `2655a85`: migración `000004_harden_admin_role_boundary`, que traslada la propiedad del esquema `app`
+  y de las tablas a `energyhub_owner`, retira el `SELECT` global de la credencial admin, exige a la vez
+  el grupo `energyhub_membership_admin` y el rol `energyhub_admin_capability` para escribir, audita las
+  escrituras en `app.admin_audit_log`, hace explícito el conflicto de creación duplicada y endurece
+  `cmd/migrate` y `cmd/api` (DSN de migración obligatoria, rechazo del rol runtime, verificación del
+  rol de la API al arrancar).
+- Endurecimiento de la superficie HTTP y del stack local: límites de tiempo y de cabecera en los
+  servidores, `no-store` y `Vary: Authorization` en la ruta protegida, timeout del cliente OIDC,
+  issuer de desarrollo restringido a IP literal de loopback con cuerpo limitado y sin secretos en el
+  log, y `dev-stack.sh` sin interpolación SQL ni credencial admin en el proceso API.
+
+- Revisión de código y de seguridad posterior, que añadió la migración `000005`: `000004` no detectaba
+  `TRUNCATE`, que el RLS no cubre, y no reafirmaba la propiedad de las funciones administrativas sobre
+  `energyhub_owner`. El bootstrap pasó a resolver la pertenencia transitiva de roles, de modo que una
+  cadena de `GRANT` o una credencial administrativa compartida hacen fallar el despliegue en vez de
+  abrir una vía silenciosa.
+
+Verificado: `go test ./...`, `go vet ./...`, `go build ./...`, `go mod verify`, `go test -race ./...` en
+verde; integración real contra PostgreSQL 17.11 con el aislamiento, la auditoría, el conflicto de
+creación duplicada, el rollback de `000004`, `000003` y `000005`, la revocación de `TRUNCATE`, la
+propiedad de los objetos y de las funciones, el fallo cerrado del bootstrap ante una pertenencia
+transitiva y la migración con un rol no superusuario. Toolchain fijada en Go 1.27.4.
+
+Pendiente: la prueba contra el tenant Auth0 real, el rate limiting por IP o subject, la decisión sobre
+roles de PostgreSQL por tenant para eliminar la falsificación de `app.current_subject` y la
+actualización del plan de Notion.

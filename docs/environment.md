@@ -156,3 +156,12 @@ La web se verificó desde `/Volumes/Server/Proyectos/energyhub-universal/apps/we
 La evidencia está en `docs/evidence/implementacion-web-inicial-2026-11-16/`. Las pruebas en teléfonos físicos siguen pendientes. La actualización del plan maestro de Notion se confirmó al cierre de esta ejecución; los intentos anteriores fallaron con `ECONNRESET`.
 
 La separación pantalla–datos está en `apps/web/app/site/provider.ts`; la fixture sintética está en `example.ts`; los tipos de lecturas, dispositivos y frescura están en `types.ts`. La siguiente fase backend está diseñada, sin implementación, en `docs/architecture/backend-next-phase.md` y `contracts/openapi/next-phase-proposal.yaml`.
+
+## Endurecimiento del backend y toolchain — 2026-11-18
+
+- Toolchain del backend: Go 1.27.4 (antes 1.27.1). `backend/go.mod` fija la versión y CI la toma con `go-version-file: backend/go.mod`, así que no circulan dos versiones. `go mod tidy` no cambió dependencias: el `go.sum` sigue igual.
+- Verificación en verde con la toolchain nueva: `go test ./...`, `go vet ./...`, `go build ./...`, `go mod verify` y `go test -race ./...`.
+- Integración real contra PostgreSQL 17.11 (Homebrew, `127.0.0.1:55432`) en verde: aislamiento de tenants, frontera administrativa con auditoría, conflicto de creación duplicada, rollback de `000004` y `000003`, propiedad de los objetos en `energyhub_owner` y migración ejecutada por un rol no superusuario.
+- Cobertura medida: `authn` 95.1%, `authz` 100%, `httpapi` 94.2%, `site` 84.6%, `devoidc` 81.9%, `storage/postgres` 98.1% (sin la suite de integración).
+- Se mantiene el alcance: sin pruebas en teléfonos físicos, sin billing, sin telemetría, sin conectores de hardware, sin datos reales y sin superficie HTTP de administración.
+- Revisión de código y de seguridad posterior al endurecimiento: se añadió la migración `000005` para cerrar el hueco de `TRUNCATE` (que el RLS no cubre) y reafirmar la propiedad de las funciones administrativas sobre `energyhub_owner`; el bootstrap ahora resuelve la pertenencia transitiva de roles y falla cerrado si un rol alcanza los grupos administrativos por una cadena o si la credencial administrativa se comparte; la verificación de rol de la API cubre `INSERT`, `UPDATE`, `DELETE` y `TRUNCATE` sobre las tres tablas protegidas; `cmd/migrate` comprueba el rol effective de la sesión y no solo el userinfo de la URL; la ruta protegida marca `Vary: Authorization` también en sus errores; el emisor de desarrollo rechaza el contenido posterior al primer objeto JSON y responde `413` a un cuerpo demasiado grande.
