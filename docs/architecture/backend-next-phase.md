@@ -142,6 +142,8 @@ El cliente OIDC usa un timeout de 10 s y el discovery se acota con su propio tim
 
 El API no termina TLS: el despliegue lo resuelve delante del proceso (terminador TLS o proxy inverso). El proceso solo debe escuchar en una interfaz interna, y nunca con la credencial administrativa en su entorno.
 
+Las tres herramientas que abren una conexión (`cmd/api`, `cmd/membership` y `cmd/migrate`) reescriben el error de conexión antes de mostrarlo, quitando la contraseña del DSN. No es cosmético: el driver de PostgreSQL incluye la cadena de conexión original, sin filtrar, en el error de una URL mal formada, y ese error acaba en el log de arranque. La credencial de migración es la más sensible del sistema, así que su redaction no es opcional.
+
 ## Emisor OIDC de desarrollo
 
 `backend/cmd/devoidc` es una herramienta de desarrollo y está restringido a loopback:
@@ -175,6 +177,7 @@ El script trata las credenciales de desarrollo como credenciales:
 
 - Los valores que llegan a SQL se pasan como variables de `psql` (`:'nombre'` para literales, `:"nombre"` para identificadores), nunca por interpolación en la cadena, y el nombre de la base, el host, el puerto, el usuario y las contraseñas se validan contra un conjunto de caracteres restringidos antes de usarse. Las contraseñas se escriben desde el entorno con `\getenv`, así que tampoco aparecen en la lista de procesos.
 - El proceso API nunca recibe `ADMIN_DATABASE_URL` ni `MIGRATION_DATABASE_URL`: la credencial administrativa es solo del CLI y el script las elimina del entorno heredado de los dos procesos que lanza.
+- El DSN del runtime se exporta al proceso API en vez de pasarse como argumento, así que tampoco aparece en la lista de procesos: el entorno del proceso lo necesita, la lista de procesos no.
 - La API del stack local escucha en `127.0.0.1:8080`.
 - El log del emisor se crea con `mktemp` y con `umask 077`, y el script espera a que el emisor responda antes de continuar. Las comprobaciones de readiness usan `curl` con timeout, así que un proceso que acepta la conexión pero no responde no bloquea el script.
 - El script comprueba que `psql` y `curl` estén disponibles y falla con un mensaje claro si no lo están.
