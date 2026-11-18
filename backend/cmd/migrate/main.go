@@ -95,7 +95,7 @@ func run() error {
 
 	pool, err := pgxpool.New(ctx, databaseURL)
 	if err != nil {
-		return fmt.Errorf("connect database: %w", err)
+		return fmt.Errorf("connect database: %w", postgres.RedactConnectionError(err, databaseURL))
 	}
 	defer pool.Close()
 
@@ -107,7 +107,7 @@ func run() error {
 	role, err := connectedRole(inspectContext, postgres.NewPgxRoleInspector(pool))
 	cancelInspect()
 	if err != nil {
-		return err
+		return postgres.RedactConnectionError(err, databaseURL)
 	}
 	if role == runtimeRoleName {
 		return ErrRuntimeCredentialForMigrations
@@ -115,7 +115,7 @@ func run() error {
 
 	result, err := postgres.Migrate(ctx, postgres.NewMigrationStore(pool), plan)
 	if err != nil {
-		return fmt.Errorf("migrate: %w", err)
+		return fmt.Errorf("migrate: %w", postgres.RedactConnectionError(err, databaseURL))
 	}
 	log.Printf("migrations complete: applied=%d skipped=%d", len(result.Applied), len(result.Skipped))
 	return nil
