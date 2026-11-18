@@ -172,15 +172,20 @@ EOF
 
 if [[ "${1:-}" == "--with-api" ]]; then
   echo "==> starting API"
-  cd "${BACKEND_DIR}"
   # The administrative credential belongs to the CLI, never to the API process.
   # The inherited ones are removed as well, so an environment that already has
   # them exported cannot leak them into a long lived process.
-  env -u ADMIN_DATABASE_URL -u MIGRATION_DATABASE_URL \
-  LISTEN_ADDR="127.0.0.1:8080" \
-  AUTH0_ISSUER="${ISSUER_URL}" \
-  AUTH0_AUDIENCE="${DEV_OIDC_AUDIENCE}" \
-  SYSTEM_ADMIN_SUBJECT="${SYSTEM_ADMIN_SUBJECT}" \
-  DATABASE_URL="${RUNTIME_DSN}" \
-  go run ./cmd/api
+  #
+  # The runtime credential is exported instead of being passed as an argument,
+  # so it never appears in the process list.
+  (
+    cd "${BACKEND_DIR}"
+    unset ADMIN_DATABASE_URL MIGRATION_DATABASE_URL
+    export LISTEN_ADDR="127.0.0.1:8080"
+    export AUTH0_ISSUER="${ISSUER_URL}"
+    export AUTH0_AUDIENCE="${DEV_OIDC_AUDIENCE}"
+    export SYSTEM_ADMIN_SUBJECT="${SYSTEM_ADMIN_SUBJECT}"
+    export DATABASE_URL="${RUNTIME_DSN}"
+    go run ./cmd/api
+  )
 fi

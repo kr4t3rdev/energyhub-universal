@@ -369,7 +369,7 @@ func newIntegrationEnvironment(t *testing.T, superuserURL string) integrationEnv
 	superuserPool := connect(t, superuserURL)
 	defer superuserPool.Close()
 
-	databaseName := createIntegrationDatabase(t, ctx, superuserPool, "")
+	databaseName := createIntegrationDatabase(t, ctx, superuserURL, superuserPool, "")
 	databaseURL := withDatabase(superuserURL, databaseName)
 
 	applyBootstrap(t, ctx, connect(t, databaseURL))
@@ -394,12 +394,19 @@ func newIntegrationEnvironment(t *testing.T, superuserURL string) integrationEnv
 	}
 }
 
+// integrationDatabaseName returns the name of the throwaway database of this
+// test process. Every helper uses it, so a role created before the database
+// still knows where it has to release the privileges it holds.
+func integrationDatabaseName() string {
+	return fmt.Sprintf("energyhub_it_%d", os.Getpid())
+}
+
 // createIntegrationDatabase creates a throwaway database and removes it when
 // the test ends.
-func createIntegrationDatabase(t *testing.T, ctx context.Context, superuserPool *pgxpool.Pool, ownerRole string) string {
+func createIntegrationDatabase(t *testing.T, ctx context.Context, superuserURL string, superuserPool *pgxpool.Pool, ownerRole string) string {
 	t.Helper()
 
-	databaseName := fmt.Sprintf("energyhub_it_%d", os.Getpid())
+	databaseName := integrationDatabaseName()
 	if _, err := superuserPool.Exec(ctx, "DROP DATABASE IF EXISTS "+databaseName+" WITH (FORCE)"); err != nil {
 		t.Fatal(err)
 	}
@@ -411,7 +418,7 @@ func createIntegrationDatabase(t *testing.T, ctx context.Context, superuserPool 
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		cleanupPool, err := pgxpool.New(context.Background(), superuserURLOf(superuserPool))
+		cleanupPool, err := pgxpool.New(context.Background(), superuserURL)
 		if err != nil {
 			t.Logf("connect for cleanup: %v", err)
 			return
@@ -456,15 +463,7 @@ func createEphemeralRole(t *testing.T, ctx context.Context, superuserURL string,
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		cleanupPool, err := pgxpool.New(context.Background(), superuserURL)
-		if err != nil {
-			t.Logf("connect for cleanup: %v", err)
-			return
-		}
-		defer cleanupPool.Close()
-		if _, err := cleanupPool.Exec(context.Background(), "DROP ROLE IF EXISTS "+name); err != nil {
-			t.Logf("drop ephemeral role %s: %v", name, err)
-		}
+		dropEphemeralRole(t, superuserURL, name)
 	})
 	for _, inherited := range inheritedRoles {
 		if _, err := pool.Exec(ctx, "GRANT "+inherited+" TO "+name); err != nil {
@@ -474,8 +473,29 @@ func createEphemeralRole(t *testing.T, ctx context.Context, superuserURL string,
 	return name
 }
 
-func superuserURLOf(pool *pgxpool.Pool) string {
-	return pool.Config().ConnConfig.ConnString()
+// dropEphemeralRole removes a test role from the cluster.
+//
+// The role may hold a privilege on the tables of the test database, and a role
+// with a pending privilege cannot be dropped while that table exists, so the
+// privileges are released first. The database is already gone in some tests,
+// and the failure of that step is expected there.
+func dropEphemeralRole(t *testing.T, superuserURL string, name string) {
+	t.Helper()
+
+	if pool, err := pgxpool.New(context.Background(), withDatabase(superuserURL, integrationDatabaseName())); err == nil {
+		_, _ = pool.Exec(context.Background(), "DROP OWNED BY "+name+" CASCADE")
+		pool.Close()
+	}
+
+	pool, err := pgxpool.New(context.Background(), superuserURL)
+	if err != nil {
+		t.Logf("connect for cleanup: %v", err)
+		return
+	}
+	defer pool.Close()
+	if _, err := pool.Exec(context.Background(), "DROP ROLE IF EXISTS "+name); err != nil {
+		t.Logf("drop ephemeral role %s: %v", name, err)
+	}
 }
 
 func withDatabase(rawURL, database string) string {

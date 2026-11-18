@@ -23,7 +23,7 @@ func TestIntegrationRuntimeRoleCannotKeepTableOwnership(t *testing.T) {
 	defer superuserPool.Close()
 
 	legacyOwner := createEphemeralRole(t, ctx, superuserURL, "energyhub_it_legacy_owner")
-	databaseName := createIntegrationDatabase(t, ctx, superuserPool, legacyOwner)
+	databaseName := createIntegrationDatabase(t, ctx, superuserURL, superuserPool, legacyOwner)
 	databaseURL := withDatabase(superuserURL, databaseName)
 
 	applyBootstrap(t, ctx, connect(t, databaseURL))

@@ -147,7 +147,7 @@ func run(args []string) error {
 			postgres.NewOrganizationWriter(db, config.systemAdminSubject),
 		)
 		if err := service.Create(ctx, principal, action.organizationID, action.name); err != nil {
-			return fmt.Errorf("create organization: %w", err)
+			return adminError("create organization", err, config.adminDatabaseURL)
 		}
 	case actionGrant:
 		service := authz.NewAdminMembershipService(
@@ -155,7 +155,7 @@ func run(args []string) error {
 			postgres.NewMembershipWriter(db, config.systemAdminSubject),
 		)
 		if err := service.Grant(ctx, principal, action.organizationID, action.subject, action.role); err != nil {
-			return fmt.Errorf("grant membership: %w", err)
+			return adminError("grant membership", err, config.adminDatabaseURL)
 		}
 	case actionRevoke:
 		service := authz.NewAdminMembershipService(
@@ -163,7 +163,7 @@ func run(args []string) error {
 			postgres.NewMembershipWriter(db, config.systemAdminSubject),
 		)
 		if err := service.Revoke(ctx, principal, action.organizationID, action.subject); err != nil {
-			return fmt.Errorf("revoke membership: %w", err)
+			return adminError("revoke membership", err, config.adminDatabaseURL)
 		}
 	default:
 		return fmt.Errorf("%w: %q", ErrUnknownCommand, action.kind)
@@ -171,4 +171,10 @@ func run(args []string) error {
 
 	log.Printf("%s completed for organization %q", action.kind, action.organizationID)
 	return nil
+}
+
+// adminError wraps an administrative failure without letting the password of
+// the administrative credential reach the terminal or the log.
+func adminError(operation string, err error, adminDatabaseURL string) error {
+	return fmt.Errorf("%s: %w", operation, postgres.RedactConnectionError(err, adminDatabaseURL))
 }

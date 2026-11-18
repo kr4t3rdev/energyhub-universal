@@ -26,7 +26,7 @@ func TestIntegrationProtectedTablePrivilegesAreRevoked(t *testing.T) {
 	superuserPool := connect(t, superuserURL)
 	defer superuserPool.Close()
 
-	databaseName := createIntegrationDatabase(t, ctx, superuserPool, "")
+	databaseName := createIntegrationDatabase(t, ctx, superuserURL, superuserPool, "")
 	databaseURL := withDatabase(superuserURL, databaseName)
 
 	applyBootstrap(t, ctx, connect(t, databaseURL))
@@ -106,7 +106,7 @@ func TestIntegrationBootstrapRejectsUnexpectedRoleMembership(t *testing.T) {
 	superuserPool := connect(t, superuserURL)
 	defer superuserPool.Close()
 
-	databaseName := createIntegrationDatabase(t, ctx, superuserPool, "")
+	databaseName := createIntegrationDatabase(t, ctx, superuserURL, superuserPool, "")
 	databaseURL := withDatabase(superuserURL, databaseName)
 
 	applyBootstrap(t, ctx, connect(t, databaseURL))
@@ -143,7 +143,7 @@ func TestIntegrationBootstrapRejectsSharedAdminCredential(t *testing.T) {
 	superuserPool := connect(t, superuserURL)
 	defer superuserPool.Close()
 
-	databaseName := createIntegrationDatabase(t, ctx, superuserPool, "")
+	databaseName := createIntegrationDatabase(t, ctx, superuserURL, superuserPool, "")
 	databaseURL := withDatabase(superuserURL, databaseName)
 
 	applyBootstrap(t, ctx, connect(t, databaseURL))
@@ -176,7 +176,7 @@ func TestIntegrationAdminFunctionsAreOwnedByTheOwnerRole(t *testing.T) {
 	superuserPool := connect(t, superuserURL)
 	defer superuserPool.Close()
 
-	databaseName := createIntegrationDatabase(t, ctx, superuserPool, "")
+	databaseName := createIntegrationDatabase(t, ctx, superuserURL, superuserPool, "")
 	databaseURL := withDatabase(superuserURL, databaseName)
 
 	applyBootstrap(t, ctx, connect(t, databaseURL))

@@ -19,7 +19,7 @@ func TestIntegrationMigrationWithNonSuperuserOwner(t *testing.T) {
 	defer superuserPool.Close()
 
 	migratorRole := createEphemeralRole(t, ctx, superuserURL, "energyhub_it_migrator", integrationOwnerRole)
-	databaseName := createIntegrationDatabase(t, ctx, superuserPool, migratorRole)
+	databaseName := createIntegrationDatabase(t, ctx, superuserURL, superuserPool, migratorRole)
 	databaseURL := withDatabase(superuserURL, databaseName)
 
 	applyBootstrap(t, ctx, connect(t, databaseURL))

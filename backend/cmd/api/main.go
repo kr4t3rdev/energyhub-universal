@@ -175,7 +175,7 @@ func buildRouter(ctx context.Context, config apiConfig) (http.Handler, func(), e
 	defer cancel()
 	if err := pool.Ping(pingContext); err != nil {
 		cleanup()
-		return nil, func() {}, fmt.Errorf("ping database: %w", err)
+		return nil, func() {}, fmt.Errorf("ping database: %w", postgres.RedactConnectionError(err, config.databaseURL))
 	}
 
 	// The API must connect with the read only runtime role. A credential that
