@@ -151,6 +151,15 @@ func buildRouter(ctx context.Context, getenv func(string) string) (http.Handler,
 		return nil, func() {}, fmt.Errorf("ping database: %w", err)
 	}
 
+	// The API must connect with the read only runtime role. A credential that
+	// is a superuser, that bypasses row level security or that can write the
+	// membership tables would read or change every tenant.
+	roleVerifier := postgres.NewRuntimeRoleVerifier(postgres.NewPgxRoleInspector(pool))
+	if err := roleVerifier.VerifyRuntimeRole(ctx); err != nil {
+		cleanup()
+		return nil, func() {}, fmt.Errorf("verify database role: %w", err)
+	}
+
 	verifier, err := authn.NewAuth0Verifier(ctx, config.auth, nil)
 	if err != nil {
 		cleanup()

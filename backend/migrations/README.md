@@ -7,8 +7,10 @@ Migraciones SQL forward-only, embebidas por `migrations.Files` para que el coman
 - La API no ejecuta migraciones. Solo se aplican de forma explícita:
 
 ```sh
-DATABASE_URL='postgres://...' go run ./cmd/migrate
+MIGRATION_DATABASE_URL='postgres://...' go run ./cmd/migrate
 ```
+
+`MIGRATION_DATABASE_URL` es obligatoria y no tiene alternativa: la credencial de la API (`DATABASE_URL`) no puede aplicar migraciones, porque quedaría como propietaria de las tablas. El comando rechaza la conexión si el usuario es `energyhub_runtime`.
 
 El runner crea `schema_migrations`, aplica cada versión pendiente y registra esa versión en la misma transacción. Se niega a continuar si la base tiene una versión que el binario no conoce. Los archivos `.down.sql` no se ejecutan automáticamente.
 
@@ -18,18 +20,29 @@ Ejecutar como un único job de despliegue: no hay coordinación entre runners co
 
 `000002_enable_tenant_rls` habilita y fuerza RLS en `organizations` y `organization_memberships`. Las lecturas deben fijar `app.current_subject` en la transacción; el lector de `internal/storage/postgres` lo hace automáticamente. Sin esa variable, las políticas deniegan el acceso.
 
+`app.current_subject` es un GUC y un GUC no se puede proteger en PostgreSQL: la credencial de la API puede fijar otro valor por su cuenta. El aislamiento entre tenants del cliente HTTP no depende de él (el subject lo fija el servidor a partir del token verificado), pero una credencial de base de datos filtrada sí puede leer las membresías de otro sujeto. La prueba `TestIntegrationDocumentsForgeableTenantContext` deja esa limitación escrita y falla si el comportamiento cambia.
+
 ## Roles y frontera de escritura administrativa
 
 `000003_secure_admin_writes` sustituye la escritura administrativa basada en `app.is_system_admin` por una frontera de rol de PostgreSQL. Un GUC personalizado no puede protegerse: cualquier rol puede ejecutar `SET app.is_system_admin = 'on'`, así que con la credencial de la aplicación era posible escalarse a escritura admin.
 
-Antes de aplicar las migraciones hay que crear los roles del cluster (una vez, con un superusuario):
+`000004_harden_admin_role_boundary` cierra los huecos que dejó `000003`:
+
+- La propiedad del esquema `app` y de las tablas pasa a `energyhub_owner`, un rol `NOLOGIN BYPASSRLS`. Antes, el rol que aplicó las migraciones conservaba la propiedad y podía desactivar RLS, borrar políticas o concederse escrituras.
+- Se revocan todos los privilegios previos y se concede el mínimo: la API solo lee, la credencial administrativa solo ejecuta funciones.
+- Las políticas de lectura ya no conceden acceso total al grupo administrativo.
+- Las funciones comprueban `energyhub_admin_capability`, un grupo distinto del que tiene el `EXECUTE`, así que conceder uno de los dos por error no abre la puerta.
+- Cada escritura administrativa deja una traza en `app.admin_audit_log` con el actor (`session_user`), la operación y el objetivo.
+- Crear una organización que ya existe es un conflicto explícito, no un renombrado silencioso.
+
+Antes de aplicar las migraciones hay que crear y normalizar los roles del cluster (una vez, con un superusuario y contra la base de datos de la aplicación):
 
 ```sh
 psql "$DATABASE_ADMIN_URL" -v ON_ERROR_STOP=1 \
   -f backend/deploy/postgres/bootstrap.sql
 ```
 
-El bootstrap solo crea roles y permisos: no asigna contraseñas, para que ninguna credencial viva en el repositorio. El operador las fija desde su gestor de secretos, por ejemplo:
+El bootstrap normaliza los atributos de los roles en cada ejecución, revoca las pertenencias que no corresponden, crea el esquema `app` con `energyhub_owner` como propietario y falla si un rol inesperado pertenece a los grupos administrativos. No asigna contraseñas, para que ninguna credencial viva en el repositorio. El operador las fija desde su gestor de secretos, por ejemplo:
 
 ```sh
 psql "$DATABASE_ADMIN_URL" -c "ALTER ROLE energyhub_runtime PASSWORD '$RUNTIME_PASSWORD'"
@@ -40,11 +53,12 @@ psql "$DATABASE_ADMIN_URL" -c "ALTER ROLE energyhub_admin PASSWORD '$ADMIN_PASSW
 | --- | --- |
 | `energyhub_runtime` | credencial `DATABASE_URL` de la API: solo `SELECT`, con RLS activo |
 | `energyhub_membership_admin` | grupo `NOLOGIN` que habilita las escrituras administrativas |
-| `energyhub_admin` | credencial `ADMIN_DATABASE_URL`: miembro del grupo admin |
-| `energyhub_owner` | `NOLOGIN BYPASSRLS`, dueño de las funciones `app.*` |
+| `energyhub_admin_capability` | grupo `NOLOGIN` que las funciones comprueban |
+| `energyhub_admin` | credencial `ADMIN_DATABASE_URL`: miembro de los dos grupos |
+| `energyhub_owner` | `NOLOGIN BYPASSRLS`, dueño del esquema, de las tablas y de las funciones |
 
-Las escrituras pasan por `app.create_organization`, `app.grant_membership` y `app.revoke_membership`: funciones `SECURITY DEFINER` con `search_path` vacío, `EXECUTE` revocado a `PUBLIC` y concedido solo al grupo admin. Cada función vuelve a comprobar `pg_has_role(session_user, 'energyhub_membership_admin', 'member')`, así que un `GRANT` accidental no abre la puerta. La API escribe con la credencial admin y nunca directamente sobre las tablas.
+Las escrituras pasan por `app.create_organization`, `app.grant_membership` y `app.revoke_membership`: funciones `SECURITY DEFINER` con `search_path` vacío, `EXECUTE` revocado a `PUBLIC` y concedido solo al grupo administrativo. El CLI de administración escribe con la credencial admin; la API solo lee con `DATABASE_URL` y nunca escribe.
 
-Las migraciones se aplican con un rol que pueda cambiar la propiedad de las funciones a `energyhub_owner`: un superusuario o un rol con esa pertenencia.
+Las migraciones se aplican con un rol que pueda cambiar la propiedad de los objetos a `energyhub_owner`: un superusuario o un rol con esa pertenencia. Ese rol hereda `BYPASSRLS` y los privilegios de escritura, así que es una credencial privilegiada del job de despliegue: nunca debe ser la `DATABASE_URL` de la API.
 
-El `.down.sql` de `000003` restaura el conjunto de políticas de `000002`, incluida la frontera más débil basada en `app.is_system_admin`. Solo usarlo para volver a `000002` en un entorno controlado.
+El `.down.sql` de `000004` devuelve el estado de `000003` y el de `000003` devuelve el de `000002`, incluida la frontera más débil basada en `app.is_system_admin`. Son reversiones manuales: se ejecutan con una conexión privilegiada y solo para volver a un estado anterior en un entorno controlado.

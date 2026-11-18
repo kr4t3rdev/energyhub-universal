@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -22,23 +23,46 @@ func main() {
 	}
 }
 
+// ErrRuntimeCredentialForMigrations is returned when the migration connection
+// uses the read only runtime role. That credential must never apply
+// migrations: it would own the tables and could disable row level security.
+var ErrRuntimeCredentialForMigrations = errors.New("the runtime credential cannot apply migrations")
+
+// runtimeRoleName is the role the API uses to read memberships.
+const runtimeRoleName = "energyhub_runtime"
+
 // migrationDatabaseURL resolves the privileged connection used to apply
-// migrations. MIGRATION_DATABASE_URL wins; DATABASE_URL is the fallback for
-// single-credential environments.
+// migrations. The runtime credential of the API is never accepted here.
 func migrationDatabaseURL(getenv func(string) string) string {
 	if getenv == nil {
 		return ""
 	}
-	if url := strings.TrimSpace(getenv("MIGRATION_DATABASE_URL")); url != "" {
-		return url
+	return strings.TrimSpace(getenv("MIGRATION_DATABASE_URL"))
+}
+
+// validateMigrationCredential refuses a connection that would leave the
+// database owned by the credential the API reads with.
+func validateMigrationCredential(databaseURL string) error {
+	parsed, err := url.Parse(databaseURL)
+	if err != nil {
+		return fmt.Errorf("parse migration database URL: %w", err)
 	}
-	return strings.TrimSpace(getenv("DATABASE_URL"))
+	if parsed.User == nil {
+		return nil
+	}
+	if parsed.User.Username() == runtimeRoleName {
+		return ErrRuntimeCredentialForMigrations
+	}
+	return nil
 }
 
 func run() error {
 	databaseURL := migrationDatabaseURL(os.Getenv)
 	if databaseURL == "" {
 		return errors.New("MIGRATION_DATABASE_URL is required")
+	}
+	if err := validateMigrationCredential(databaseURL); err != nil {
+		return err
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
