@@ -16,6 +16,7 @@ umask 077
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_DIR="$(cd "${BACKEND_DIR}/.." && pwd)"
 
 PGHOST="${PGHOST:-127.0.0.1}"
 PGPORT="${PGPORT:-5432}"
@@ -89,7 +90,9 @@ echo "==> setting development role credentials"
 # The passwords are read from the environment by psql itself and written to a
 # private file, so they neither show up in the process list nor are they
 # interpolated into the SQL text.
-export RUNTIME_PW ADMIN_PW
+#
+# They are not exported: only the psql call that needs them receives them, so
+# no other process of the machine inherits the database credentials.
 CREDENTIALS_FILE="$(mktemp "${TMPDIR:-/tmp}/energyhub-dev-credentials.XXXXXX")"
 trap 'rm -f "${CREDENTIALS_FILE}"' EXIT
 cat >"${CREDENTIALS_FILE}" <<'SQL'
@@ -98,7 +101,8 @@ cat >"${CREDENTIALS_FILE}" <<'SQL'
 ALTER ROLE energyhub_runtime PASSWORD :'runtime_pw';
 ALTER ROLE energyhub_admin PASSWORD :'admin_pw';
 SQL
-psql -d "${PGDATABASE}" -v ON_ERROR_STOP=1 -q -f "${CREDENTIALS_FILE}"
+RUNTIME_PW="${RUNTIME_PW}" ADMIN_PW="${ADMIN_PW}" \
+  psql -d "${PGDATABASE}" -v ON_ERROR_STOP=1 -q -f "${CREDENTIALS_FILE}"
 rm -f "${CREDENTIALS_FILE}"
 trap - EXIT
 
@@ -119,7 +123,8 @@ if ! issuer_ready; then
   ISSUER_LOG="$(mktemp "${TMPDIR:-/tmp}/energyhub-devoidc.XXXXXX")"
   # The issuer does not need any database credential, so the inherited ones are
   # removed from its environment.
-  (cd "${BACKEND_DIR}" && env -u ADMIN_DATABASE_URL -u MIGRATION_DATABASE_URL \
+  (cd "${BACKEND_DIR}" && env -u ADMIN_DATABASE_URL -u MIGRATION_DATABASE_URL -u DATABASE_URL \
+    -u RUNTIME_PW -u ADMIN_PW \
     nohup go run ./cmd/devoidc >"${ISSUER_LOG}" 2>&1 </dev/null &)
   ready=0
   for _ in $(seq 1 30); do
@@ -137,19 +142,32 @@ if ! issuer_ready; then
   echo "    issuer log: ${ISSUER_LOG}"
 fi
 
+# The environment is written to a private file instead of the standard output:
+# the connection strings carry the development passwords, and the output of a
+# script ends up in terminal logs, in redirected files and in CI logs.
+ENV_FILE="${REPO_DIR}/.local/dev-stack.env"
+mkdir -p "$(dirname "${ENV_FILE}")"
+umask 077
+cat >"${ENV_FILE}" <<EOF
+export AUTH0_ISSUER="${ISSUER_URL}"
+export AUTH0_AUDIENCE="${DEV_OIDC_AUDIENCE}"
+export SYSTEM_ADMIN_SUBJECT="${SYSTEM_ADMIN_SUBJECT}"
+export DATABASE_URL="${RUNTIME_DSN}"
+export ADMIN_DATABASE_URL="${ADMIN_DSN}"
+EOF
+chmod 600 "${ENV_FILE}"
+
 cat <<EOF
 
 Local stack ready.
 
-export AUTH0_ISSUER="${ISSUER_URL}"
-export AUTH0_AUDIENCE="${DEV_OIDC_AUDIENCE}"
-export SYSTEM_ADMIN_SUBJECT="${SYSTEM_ADMIN_SUBJECT}"
-export DATABASE_URL="\${DATABASE_URL:-${RUNTIME_DSN}}"
-export ADMIN_DATABASE_URL="\${ADMIN_DATABASE_URL:-${ADMIN_DSN}}"
+The environment is in ${ENV_FILE} (mode 0600). Load it with:
 
-The connection strings above contain the development passwords and must stay on
-this machine. Request a token with the development credentials of the issuer:
-the client secret is DEV_OIDC_CLIENT_SECRET and the passwords are
+  source ${ENV_FILE}
+
+The connection strings in that file contain the development passwords and must
+stay on this machine. Request a token with the development credentials of the
+issuer: the client secret is DEV_OIDC_CLIENT_SECRET and the passwords are
 DEV_OIDC_ADMIN_PASSWORD and DEV_OIDC_USER_PASSWORD.
 
   curl -s -X POST ${ISSUER_URL}/oauth/token -H 'Content-Type: application/json' \\
@@ -176,11 +194,17 @@ if [[ "${1:-}" == "--with-api" ]]; then
   # The inherited ones are removed as well, so an environment that already has
   # them exported cannot leak them into a long lived process.
   #
+  # The database passwords are removed too: with the administrative password
+  # the API process could connect as the administrative role and write without
+  # the CLI.
+  #
   # The runtime credential is exported instead of being passed as an argument,
   # so it never appears in the process list.
   (
     cd "${BACKEND_DIR}"
-    unset ADMIN_DATABASE_URL MIGRATION_DATABASE_URL
+    unset ADMIN_DATABASE_URL MIGRATION_DATABASE_URL DATABASE_URL
+    unset RUNTIME_PW ADMIN_PW
+    unset DEV_OIDC_CLIENT_SECRET DEV_OIDC_ADMIN_PASSWORD DEV_OIDC_USER_PASSWORD
     export LISTEN_ADDR="127.0.0.1:8080"
     export AUTH0_ISSUER="${ISSUER_URL}"
     export AUTH0_AUDIENCE="${DEV_OIDC_AUDIENCE}"
