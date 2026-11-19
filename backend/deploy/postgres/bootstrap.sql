@@ -84,8 +84,13 @@ GRANT energyhub_admin_capability TO energyhub_admin;
 -- audit trail are owned by a role that cannot log in. It also needs CREATE on
 -- public to own the tenant tables.
 CREATE SCHEMA IF NOT EXISTS app AUTHORIZATION energyhub_owner;
-REVOKE CREATE ON SCHEMA app FROM PUBLIC;
+REVOKE ALL ON SCHEMA app FROM PUBLIC;
 GRANT CREATE ON SCHEMA public TO energyhub_owner;
+
+-- No role may create objects in public. Revoking it from the application
+-- roles does not override a grant to PUBLIC, and a cluster restored from an
+-- older dump can keep that grant, so the revocation from PUBLIC is explicit.
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 
 -- Assertions ---------------------------------------------------------------------
 
@@ -174,6 +179,22 @@ BEGIN
            );
     IF offending IS NOT NULL THEN
         RAISE EXCEPTION 'unexpected login roles with administrative privileges: %', offending;
+    END IF;
+
+    -- No application role may create objects in public: that would allow
+    -- shadow tables or functions next to the protected ones.
+    SELECT string_agg(role_name.rolname, ', ' ORDER BY role_name.rolname)
+      INTO offending
+      FROM pg_roles AS role_name
+     WHERE role_name.rolname IN (
+               'energyhub_runtime',
+               'energyhub_admin',
+               'energyhub_membership_admin',
+               'energyhub_admin_capability'
+           )
+       AND has_schema_privilege(role_name.rolname, 'public', 'CREATE');
+    IF offending IS NOT NULL THEN
+        RAISE EXCEPTION 'application roles can create objects in public: %', offending;
     END IF;
 END
 $$;

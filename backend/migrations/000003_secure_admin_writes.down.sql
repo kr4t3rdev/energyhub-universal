@@ -1,92 +1,78 @@
--- Roll back the role-based administrative write boundary.
+-- Manual rollback of 000003.
 --
--- This restores the 000002 policy set, including the app.is_system_admin write
--- policies. That boundary is weaker: any role can set the custom GUC. Only use
--- this down migration to return to 000002 in a controlled environment, and
--- re-apply 000003 and 000004 before the system handles real tenants.
+-- 000003 replaced the forgeable app.is_system_admin write boundary with a
+-- database role boundary. Its previous rollback restored the forgeable
+-- policies and gave the administrative group the read access to every tenant,
+-- and that is not supported any more: a custom GUC cannot be protected in
+-- PostgreSQL, so any role could set app.is_system_admin and write.
 --
--- The privileges are revoked before the functions and the schema disappear,
--- and the read access of the runtime role is restored, so a rollback leaves a
--- database the API can still read.
+-- The migrations of this repository are forward-only. Going back to a weaker
+-- state is not supported: the way back is to restore a backup, which is an
+-- explicit operation of the operator and not a migration.
+--
+-- This file verifies that the current boundary is the hardened one and fails
+-- closed when it is not. It changes nothing, and it never removes the audit
+-- trail.
 
 BEGIN;
 
 DO $$
+DECLARE
+    offending text;
 BEGIN
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'energyhub_membership_admin') THEN
-        REVOKE EXECUTE ON FUNCTION app.create_organization(text, text) FROM energyhub_membership_admin;
-        REVOKE EXECUTE ON FUNCTION app.grant_membership(text, text, text) FROM energyhub_membership_admin;
-        REVOKE EXECUTE ON FUNCTION app.revoke_membership(text, text) FROM energyhub_membership_admin;
-        REVOKE ALL ON SCHEMA app FROM energyhub_membership_admin;
+    -- The administrative functions must exist and belong to the owner role.
+    IF to_regprocedure('app.create_organization(text,text)') IS NULL
+       OR to_regprocedure('app.grant_membership(text,text,text)') IS NULL
+       OR to_regprocedure('app.revoke_membership(text,text)') IS NULL THEN
+        RAISE EXCEPTION 'the administrative functions are missing';
     END IF;
-END
-$$;
 
-DROP FUNCTION IF EXISTS app.create_organization(text, text);
-DROP FUNCTION IF EXISTS app.grant_membership(text, text, text);
-DROP FUNCTION IF EXISTS app.revoke_membership(text, text);
+    SELECT string_agg(function.oid::regprocedure::text, ', ' ORDER BY function.oid::regprocedure::text)
+      INTO offending
+      FROM pg_proc AS function
+      JOIN pg_namespace AS schema ON schema.oid = function.pronamespace
+      JOIN pg_roles AS owner ON owner.oid = function.proowner
+     WHERE schema.nspname = 'app'
+       AND function.proname IN ('create_organization', 'grant_membership', 'revoke_membership')
+       AND owner.rolname <> 'energyhub_owner';
+    IF offending IS NOT NULL THEN
+        RAISE EXCEPTION 'the administrative functions are not owned by energyhub_owner: %', offending;
+    END IF;
 
--- The audit trail is archived before it is dropped. The 000004 rollback
--- archives it as well, but this file can be used on its own, and a rollback
--- must never erase the evidence of who changed the memberships.
-DO $$
-BEGIN
+    -- The independent capability check must still be there.
+    IF NOT EXISTS (
+        SELECT 1
+          FROM pg_proc AS function
+          JOIN pg_namespace AS schema ON schema.oid = function.pronamespace
+         WHERE schema.nspname = 'app'
+           AND function.proname = 'create_organization'
+           AND function.prosrc LIKE '%energyhub_admin_capability%'
+    ) THEN
+        RAISE EXCEPTION 'the administrative functions do not check the capability role';
+    END IF;
+
+    -- The administrative credential must not read the tenant tables.
+    IF has_table_privilege('energyhub_membership_admin', 'public.organizations', 'SELECT')
+       OR has_table_privilege('energyhub_membership_admin', 'public.organization_memberships', 'SELECT') THEN
+        RAISE EXCEPTION 'the administrative group can read the tenant tables';
+    END IF;
+
+    -- The audit trail must be there.
     IF to_regclass('app.admin_audit_log') IS NULL THEN
-        RETURN;
+        RAISE EXCEPTION 'the audit trail is missing';
     END IF;
-    EXECUTE 'DROP TABLE IF EXISTS public.admin_audit_log_archive_000003';
-    EXECUTE 'CREATE TABLE public.admin_audit_log_archive_000003 (LIKE app.admin_audit_log EXCLUDING IDENTITY)';
-    EXECUTE 'INSERT INTO public.admin_audit_log_archive_000003 SELECT * FROM app.admin_audit_log';
-END
-$$;
 
-DROP TABLE IF EXISTS app.admin_audit_log;
-DROP SCHEMA IF EXISTS app;
-
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'energyhub_runtime') THEN
-        GRANT USAGE ON SCHEMA public TO energyhub_runtime;
-        GRANT SELECT ON public.organizations, public.organization_memberships TO energyhub_runtime;
-    END IF;
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'energyhub_membership_admin') THEN
-        REVOKE SELECT ON public.organizations, public.organization_memberships FROM energyhub_membership_admin;
-    END IF;
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'energyhub_owner') THEN
-        REVOKE SELECT, INSERT, UPDATE, DELETE ON public.organizations, public.organization_memberships FROM energyhub_owner;
+    -- The forgeable write policies must not be back.
+    IF EXISTS (
+        SELECT 1
+          FROM pg_policies
+         WHERE schemaname = 'public'
+           AND policyname IN ('organizations_write_admin', 'memberships_write_admin')
+           AND qual LIKE '%app.is_system_admin%'
+    ) THEN
+        RAISE EXCEPTION 'the forgeable write policies are back';
     END IF;
 END
 $$;
-
-DROP POLICY IF EXISTS organizations_select_member ON public.organizations;
-CREATE POLICY organizations_select_member ON public.organizations
-    FOR SELECT
-    USING (
-        current_setting('app.is_system_admin', true) = 'on'
-        OR EXISTS (
-            SELECT 1
-            FROM public.organization_memberships AS membership
-            WHERE membership.organization_id = public.organizations.id
-              AND membership.subject = current_setting('app.current_subject', true)
-        )
-    );
-
-DROP POLICY IF EXISTS memberships_select_own ON public.organization_memberships;
-CREATE POLICY memberships_select_own ON public.organization_memberships
-    FOR SELECT
-    USING (
-        subject = current_setting('app.current_subject', true)
-        OR current_setting('app.is_system_admin', true) = 'on'
-    );
-
-CREATE POLICY organizations_write_admin ON public.organizations
-    FOR ALL
-    USING (current_setting('app.is_system_admin', true) = 'on')
-    WITH CHECK (current_setting('app.is_system_admin', true) = 'on');
-
-CREATE POLICY memberships_write_admin ON public.organization_memberships
-    FOR ALL
-    USING (current_setting('app.is_system_admin', true) = 'on')
-    WITH CHECK (current_setting('app.is_system_admin', true) = 'on');
 
 COMMIT;

@@ -199,7 +199,19 @@ func TestIntegrationTenantIsolationAndAdminWrites(t *testing.T) {
 		adminPool := connect(t, environment.adminURL)
 		defer adminPool.Close()
 
-		rows, err := adminPool.Query(ctx, "SELECT operation, organization_id, subject, role FROM app.admin_audit_log ORDER BY id")
+		// The administrative credential writes through the functions but does
+		// not read the audit trail: the whole administrative history of every
+		// tenant is not part of its job.
+		if _, err := adminPool.Exec(ctx, "SELECT count(*) FROM app.admin_audit_log"); err == nil {
+			t.Fatal("err = nil, want the audit trail to be out of reach")
+		} else {
+			assertPermissionDenied(t, err)
+		}
+
+		privilegedPool := connect(t, withDatabase(superuserURL, environment.databaseName))
+		defer privilegedPool.Close()
+
+		rows, err := privilegedPool.Query(ctx, "SELECT operation, organization_id, subject, role FROM app.admin_audit_log ORDER BY id")
 		if err != nil {
 			t.Fatalf("read audit trail: %v", err)
 		}

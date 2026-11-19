@@ -129,21 +129,73 @@ func executableSQL(sql string) string {
 	return strings.Join(kept, "\n")
 }
 
-func TestAdminWriteDownMigrationRemovesSecureFunctions(t *testing.T) {
-	schema, err := os.ReadFile(adminWriteDownMigrationPath)
-	if err != nil {
-		t.Fatal(err)
+// The down migrations are forward-only: they verify that the hardened state
+// is in place and they never restore the weaker boundary.
+func TestDownMigrationsDoNotReopenTheWeakerBoundary(t *testing.T) {
+	paths := []string{
+		adminWriteDownMigrationPath,
+		hardenDownMigrationPath,
+		leftoverPrivilegeDownMigrationPath,
+		auditReadDownMigrationPath,
 	}
-	sql := string(schema)
 
-	for _, required := range []string{
-		"DROP FUNCTION IF EXISTS app.grant_membership",
-		"DROP FUNCTION IF EXISTS app.revoke_membership",
-		"DROP FUNCTION IF EXISTS app.create_organization",
-		"DROP SCHEMA IF EXISTS app",
-	} {
-		if !strings.Contains(sql, required) {
-			t.Fatalf("admin write down migration is missing %q", required)
+	for _, path := range paths {
+		schema, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sql := string(schema)
+
+		for _, forbidden := range []string{
+			// The forgeable write policies must never come back.
+			"CREATE POLICY organizations_write_admin",
+			"CREATE POLICY memberships_write_admin",
+			// The administrative group must not read the tenant tables again.
+			"GRANT SELECT ON public.organizations",
+			"GRANT SELECT ON public.organization_memberships",
+			// The audit trail must never be dropped or archived over.
+			"DROP TABLE IF EXISTS app.admin_audit_log",
+			"DROP SCHEMA IF EXISTS app",
+			// The functions must never be replaced by the weaker versions.
+			"CREATE OR REPLACE FUNCTION app.create_organization",
+		} {
+			if strings.Contains(sql, forbidden) {
+				t.Fatalf("%s contains %q, which reopens the weaker boundary", path, forbidden)
+			}
+		}
+	}
+
+	// Every rollback has to check the state it protects.
+	required := map[string][]string{
+		adminWriteDownMigrationPath: {
+			"energyhub_admin_capability",
+			"app.admin_audit_log",
+			"energyhub_owner",
+		},
+		hardenDownMigrationPath: {
+			"energyhub_admin_capability",
+			"app.admin_audit_log",
+			"energyhub_owner",
+		},
+		leftoverPrivilegeDownMigrationPath: {
+			"TRUNCATE",
+			"public.organizations",
+		},
+		auditReadDownMigrationPath: {
+			"app.admin_audit_log",
+			"public",
+		},
+	}
+	for path, fragments := range required {
+		schema, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sql := string(schema)
+		for _, fragment := range fragments {
+			if !strings.Contains(sql, fragment) {
+				t.Fatalf("%s does not check %q", path, fragment)
+			}
 		}
 	}
 }

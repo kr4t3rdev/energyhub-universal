@@ -1,136 +1,78 @@
--- Roll back the membership database hardening of 000004.
+-- Manual rollback of 000004.
 --
--- The result is the 000003 state: the admin group can read the tenant tables
--- again, the functions check energyhub_membership_admin and the audit trail
--- is gone. The ownership of the tables and of the app schema stays with
--- energyhub_owner on purpose: giving it back to an application role would
--- re-open the write path that 000004 closed.
+-- The rollback does not restore the weaker boundary of 000003. The whole point
+-- of 000004 is that the administrative write path is a database role
+-- boundary, that the administrative credential cannot read the tenant tables
+-- and that every administrative write is audited. Restoring the previous
+-- state would re-open all of that, and an incident rollback is exactly the
+-- moment where an unnoticed weaker boundary would do the most damage.
+--
+-- The migrations of this repository are forward-only. Going back to a weaker
+-- state is not supported: the way back is to restore a backup, which is an
+-- explicit operation of the operator and not a migration.
+--
+-- This file verifies that the hardened state is in place and fails closed
+-- when it is not. It changes nothing, and it never removes the audit trail.
 
 BEGIN;
 
--- Restore the 000003 functions --------------------------------------------------
-
-CREATE OR REPLACE FUNCTION app.create_organization(p_organization_id text, p_name text)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-BEGIN
-    IF NOT pg_has_role(session_user, 'energyhub_membership_admin', 'member') THEN
-        RAISE EXCEPTION 'caller is not a membership administrator' USING ERRCODE = '42501';
-    END IF;
-    IF p_organization_id IS NULL OR btrim(p_organization_id) = '' THEN
-        RAISE EXCEPTION 'organization_id is required' USING ERRCODE = '22023';
-    END IF;
-    IF p_name IS NULL OR btrim(p_name) = '' THEN
-        RAISE EXCEPTION 'organization name is required' USING ERRCODE = '22023';
-    END IF;
-
-    INSERT INTO public.organizations (id, name)
-    VALUES (btrim(p_organization_id), btrim(p_name))
-    ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION app.grant_membership(p_organization_id text, p_subject text, p_role text)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-BEGIN
-    IF NOT pg_has_role(session_user, 'energyhub_membership_admin', 'member') THEN
-        RAISE EXCEPTION 'caller is not a membership administrator' USING ERRCODE = '42501';
-    END IF;
-    IF p_organization_id IS NULL OR btrim(p_organization_id) = '' THEN
-        RAISE EXCEPTION 'organization_id is required' USING ERRCODE = '22023';
-    END IF;
-    IF p_subject IS NULL OR btrim(p_subject) = '' THEN
-        RAISE EXCEPTION 'subject is required' USING ERRCODE = '22023';
-    END IF;
-    IF p_role IS NULL OR p_role NOT IN ('owner', 'admin', 'member', 'viewer') THEN
-        RAISE EXCEPTION 'invalid membership role' USING ERRCODE = '22023';
-    END IF;
-
-    INSERT INTO public.organization_memberships (organization_id, subject, role)
-    VALUES (btrim(p_organization_id), btrim(p_subject), p_role)
-    ON CONFLICT (organization_id, subject) DO UPDATE SET role = EXCLUDED.role;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION app.revoke_membership(p_organization_id text, p_subject text)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-BEGIN
-    IF NOT pg_has_role(session_user, 'energyhub_membership_admin', 'member') THEN
-        RAISE EXCEPTION 'caller is not a membership administrator' USING ERRCODE = '42501';
-    END IF;
-    IF p_organization_id IS NULL OR btrim(p_organization_id) = '' THEN
-        RAISE EXCEPTION 'organization_id is required' USING ERRCODE = '22023';
-    END IF;
-    IF p_subject IS NULL OR btrim(p_subject) = '' THEN
-        RAISE EXCEPTION 'subject is required' USING ERRCODE = '22023';
-    END IF;
-
-    DELETE FROM public.organization_memberships
-    WHERE organization_id = btrim(p_organization_id) AND subject = btrim(p_subject);
-END;
-$$;
-
--- The functions keep their owner even when the rollback runs with a
--- privileged role that recreates them.
-ALTER FUNCTION app.create_organization(text, text) OWNER TO energyhub_owner;
-ALTER FUNCTION app.grant_membership(text, text, text) OWNER TO energyhub_owner;
-ALTER FUNCTION app.revoke_membership(text, text) OWNER TO energyhub_owner;
-
--- Restore the 000003 policies ----------------------------------------------------
-
-DROP POLICY IF EXISTS organizations_select_member ON public.organizations;
-CREATE POLICY organizations_select_member ON public.organizations
-    FOR SELECT
-    USING (
-        pg_has_role(current_user, 'energyhub_membership_admin', 'member')
-        OR EXISTS (
-            SELECT 1
-            FROM public.organization_memberships AS membership
-            WHERE membership.organization_id = public.organizations.id
-              AND membership.subject = current_setting('app.current_subject', true)
-        )
-    );
-
-DROP POLICY IF EXISTS memberships_select_own ON public.organization_memberships;
-CREATE POLICY memberships_select_own ON public.organization_memberships
-    FOR SELECT
-    USING (
-        subject = current_setting('app.current_subject', true)
-        OR pg_has_role(current_user, 'energyhub_membership_admin', 'member')
-    );
-
--- Restore the 000003 privileges ---------------------------------------------------
-
-GRANT SELECT ON public.organizations, public.organization_memberships TO energyhub_membership_admin;
-
--- Drop the audit trail -----------------------------------------------------------
-
--- The administrative write records are archived before the table is dropped:
--- a rollback must not erase the evidence of who changed the memberships. The
--- archive lives in the public schema so it survives the rollback of the app
--- schema, which removes the admin functions and the audit trail with it.
 DO $$
+DECLARE
+    offending text;
 BEGIN
-    IF to_regclass('app.admin_audit_log') IS NULL THEN
-        RETURN;
+    -- The administrative functions must exist and belong to the owner role.
+    IF to_regprocedure('app.create_organization(text,text)') IS NULL
+       OR to_regprocedure('app.grant_membership(text,text,text)') IS NULL
+       OR to_regprocedure('app.revoke_membership(text,text)') IS NULL THEN
+        RAISE EXCEPTION 'the administrative functions are missing';
     END IF;
-    EXECUTE 'DROP TABLE IF EXISTS public.admin_audit_log_archive_000004';
-    EXECUTE 'CREATE TABLE public.admin_audit_log_archive_000004 (LIKE app.admin_audit_log EXCLUDING IDENTITY)';
-    EXECUTE 'INSERT INTO public.admin_audit_log_archive_000004 SELECT * FROM app.admin_audit_log';
+
+    SELECT string_agg(function.oid::regprocedure::text, ', ' ORDER BY function.oid::regprocedure::text)
+      INTO offending
+      FROM pg_proc AS function
+      JOIN pg_namespace AS schema ON schema.oid = function.pronamespace
+      JOIN pg_roles AS owner ON owner.oid = function.proowner
+     WHERE schema.nspname = 'app'
+       AND function.proname IN ('create_organization', 'grant_membership', 'revoke_membership')
+       AND owner.rolname <> 'energyhub_owner';
+    IF offending IS NOT NULL THEN
+        RAISE EXCEPTION 'the administrative functions are not owned by energyhub_owner: %', offending;
+    END IF;
+
+    -- The independent capability check must still be there.
+    IF NOT EXISTS (
+        SELECT 1
+          FROM pg_proc AS function
+          JOIN pg_namespace AS schema ON schema.oid = function.pronamespace
+         WHERE schema.nspname = 'app'
+           AND function.proname = 'create_organization'
+           AND function.prosrc LIKE '%energyhub_admin_capability%'
+    ) THEN
+        RAISE EXCEPTION 'the administrative functions do not check the capability role';
+    END IF;
+
+    -- The administrative credential must not read the tenant tables.
+    IF has_table_privilege('energyhub_membership_admin', 'public.organizations', 'SELECT')
+       OR has_table_privilege('energyhub_membership_admin', 'public.organization_memberships', 'SELECT') THEN
+        RAISE EXCEPTION 'the administrative group can read the tenant tables';
+    END IF;
+
+    -- The audit trail must be there.
+    IF to_regclass('app.admin_audit_log') IS NULL THEN
+        RAISE EXCEPTION 'the audit trail is missing';
+    END IF;
+
+    -- The forgeable write policies must not be back.
+    IF EXISTS (
+        SELECT 1
+          FROM pg_policies
+         WHERE schemaname = 'public'
+           AND policyname IN ('organizations_write_admin', 'memberships_write_admin')
+           AND qual LIKE '%app.is_system_admin%'
+    ) THEN
+        RAISE EXCEPTION 'the forgeable write policies are back';
+    END IF;
 END
 $$;
-
-DROP TABLE IF EXISTS app.admin_audit_log;
 
 COMMIT;

@@ -39,12 +39,14 @@ func TestIntegrationProtectedTablePrivilegesAreRevoked(t *testing.T) {
 	privilegedPool := connect(t, databaseURL)
 	defer privilegedPool.Close()
 
-	// Apply every migration except the last one, so the role can be granted
-	// the privilege that the last migration has to revoke.
-	if len(plan) < 2 {
-		t.Fatalf("migrations = %d, want at least 2", len(plan))
+	// Apply every migration except the ones that revoke the leftover
+	// privileges, so the role can be granted the privilege that they have to
+	// revoke.
+	cut := migrationIndex(plan, "revoke_leftover_protected_table_privileges")
+	if cut < 1 {
+		t.Fatal("the migration that revokes the leftover privileges is missing")
 	}
-	if _, err := Migrate(ctx, NewMigrationStore(privilegedPool), plan[:len(plan)-1]); err != nil {
+	if _, err := Migrate(ctx, NewMigrationStore(privilegedPool), plan[:cut]); err != nil {
 		t.Fatalf("apply migrations: %v", err)
 	}
 
@@ -230,6 +232,17 @@ func TestIntegrationAdminFunctionsAreOwnedByTheOwnerRole(t *testing.T) {
 			t.Fatalf("function %s is owned by %s, want %s", function, owner, integrationOwnerRole)
 		}
 	}
+}
+
+// migrationIndex returns the position of a migration in the plan, or -1 when
+// the plan does not contain it.
+func migrationIndex(plan []Migration, name string) int {
+	for index, migration := range plan {
+		if migration.Name == name {
+			return index
+		}
+	}
+	return -1
 }
 
 // applyBootstrapExpectingFailure runs the bootstrap and returns the error it
