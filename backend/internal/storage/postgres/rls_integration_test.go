@@ -42,6 +42,7 @@ var bootstrapSQLPath = "../../../deploy/postgres/bootstrap.sql"
 type integrationEnvironment struct {
 	runtimeURL   string
 	adminURL     string
+	runtimeRole  string
 	databaseName string
 }
 
@@ -390,6 +391,7 @@ func newIntegrationEnvironment(t *testing.T, superuserURL string) integrationEnv
 	return integrationEnvironment{
 		runtimeURL:   withCredentials(superuserURL, runtimeRole, integrationPassword, databaseName),
 		adminURL:     withCredentials(superuserURL, adminRole, integrationPassword, databaseName),
+		runtimeRole:  runtimeRole,
 		databaseName: databaseName,
 	}
 }
