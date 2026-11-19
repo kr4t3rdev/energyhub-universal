@@ -111,6 +111,24 @@ Arranque de la API:
   los objetos y de las funciones administrativas en `energyhub_owner`, el fallo
   cerrado del bootstrap ante una pertenencia transitiva o una credencial
   administrativa compartida, y la migración ejecutada por un rol no superusuario.
+  La suite también libera los privilegios del rol temporal antes de eliminarlo:
+  después de la ejecución, `pg_roles` y `pg_database` no muestran ningún rol ni
+  base `energyhub_it_%`.
+- `internal/storage/postgres` (redaction): la contraseña del DSN no aparece en los
+  errores de conexión de `cmd/api`, `cmd/membership` ni `cmd/migrate`, que la
+  quitan antes de mostrarlos.
+
+Higiene de credenciales en el proceso:
+
+| Comprobación | Resultado |
+| --- | --- |
+| DSN del runtime en la lista de procesos | no aparece (`ps -Ao args` no lo encuentra) |
+| `ADMIN_DATABASE_URL` en el entorno del proceso API | no está |
+| `MIGRATION_DATABASE_URL` en el entorno del proceso API | no está |
+
+La suite de integración corre también en CI: el job de backend levanta un
+PostgreSQL 17 como servicio y ejecuta `TestIntegration`, así que el aislamiento y
+la frontera administrativa se comprueban en cada ejecución.
 
 ## Límites explícitos
 
