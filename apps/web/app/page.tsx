@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { siteOverviewProvider } from "./site/provider";
-import { formatReading, freshnessLabel } from "./site/presentation";
+import { deviceStatusLabel, formatReading, freshnessLabel, hasDevices } from "./site/presentation";
 
 async function SiteMeta({ updatedAt }: { updatedAt: string | null }) {
   await connection();
@@ -71,10 +71,22 @@ export default async function Home() {
           <div className="lower-grid">
             <section className="devices-panel" id="dispositivos" aria-labelledby="devices-title">
               <div className="panel-header"><div><p className="eyebrow muted">TU INSTALACIÓN</p><h2 id="devices-title">Dispositivos</h2></div><span className="count">{devices.length.toString().padStart(2, "0")}</span></div>
-              <div className="empty-state">
-                <div className="empty-symbol" aria-hidden="true"><span>＋</span></div>
-                <div><h3>Aún no hay dispositivos</h3><p>Cuando la conexión esté disponible, aquí podrás consultar los equipos de tu instalación.</p></div>
-              </div>
+              {hasDevices(devices) ? (
+                <ul className="device-list">
+                  {devices.map((device) => (
+                    <li className="device-item" key={device.id}>
+                      <div><span className="device-name">{device.name}</span><span className="device-kind">{device.kind}</span></div>
+                      <p className="device-status">{deviceStatusLabel(device)}</p>
+                      <p className="device-note">{device.note}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="empty-state">
+                  <div className="empty-symbol" aria-hidden="true"><span>＋</span></div>
+                  <div><h3>Aún no hay dispositivos</h3><p>Cuando la conexión esté disponible, aquí podrás consultar los equipos de tu instalación.</p></div>
+                </div>
+              )}
               <p className="panel-footnote"><span aria-hidden="true">↗</span> La incorporación de equipos desde el móvil llegará en una fase posterior.</p>
             </section>
 

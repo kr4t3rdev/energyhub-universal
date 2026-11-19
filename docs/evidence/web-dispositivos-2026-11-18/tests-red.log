@@ -1,0 +1,84 @@
+$ vitest run
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.1.0 [39m[90m/Volumes/Server/Proyectos/energyhub-universal/apps/web[39m
+
+ [31m❯[39m app/site/presentation.test.ts [2m([22m[2m16 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 37[2mms[22m[39m
+   [32m✓[39m formatReading [2m(3)[22m
+     [32m✓[39m formatea el valor con su unidad en español[32m 32[2mms[22m[39m
+     [32m✓[39m muestra un guion para valores faltantes sin inventar datos[32m 0[2mms[22m[39m
+     [32m✓[39m no añade separador cuando la lectura no lleva unidad[32m 0[2mms[22m[39m
+   [32m✓[39m readingFreshness [2m(5)[22m
+     [32m✓[39m marca ausencia cuando no hay fecha o no es válida[32m 0[2mms[22m[39m
+     [32m✓[39m marca fresca dentro del umbral[32m 0[2mms[22m[39m
+     [32m✓[39m marca obsoleta fuera del umbral[32m 0[2mms[22m[39m
+     [32m✓[39m tolera relojes ligeramente adelantados[32m 0[2mms[22m[39m
+     [32m✓[39m usa el umbral personalizado[32m 0[2mms[22m[39m
+   [32m✓[39m freshnessLabel [2m(4)[22m
+     [32m✓[39m explica la ausencia de datos sin inventarlos[32m 0[2mms[22m[39m
+     [32m✓[39m describe una lectura reciente[32m 0[2mms[22m[39m
+     [32m✓[39m usa horas cuando la antigüedad supera una hora[32m 0[2mms[22m[39m
+     [32m✓[39m avisa cuando la lectura está desactualizada[32m 0[2mms[22m[39m
+   [31m❯[39m deviceStatusLabel [2m(2)[22m
+[31m     [31m×[31m muestra el estado presente del dispositivo[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m no inventa estado cuando es null[39m[32m 0[2mms[22m[39m
+   [31m❯[39m hasDevices [2m(2)[22m
+[31m     [31m×[31m es falso con la lista vacía[39m[32m 0[2mms[22m[39m
+[31m     [31m×[31m es verdadero cuando hay al menos un dispositivo[39m[32m 0[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 4 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m app/site/presentation.test.ts[2m > [22mdeviceStatusLabel[2m > [22mmuestra el estado presente del dispositivo
+[31m[1mTypeError[22m: deviceStatusLabel is not a function[39m
+[36m [2m❯[22m app/site/presentation.test.ts:[2m82:12[22m[39m
+    [90m 80|[39m       note[33m:[39m [32m"Valor de ejemplo"[39m[33m,[39m
+    [90m 81|[39m     }[33m;[39m
+    [90m 82|[39m     [34mexpect[39m([34mdeviceStatusLabel[39m(device))[33m.[39m[34mtoBe[39m([32m"En línea"[39m)[33m;[39m
+    [90m   |[39m            [31m^[39m
+    [90m 83|[39m   })[33m;[39m
+    [90m 84|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m app/site/presentation.test.ts[2m > [22mdeviceStatusLabel[2m > [22mno inventa estado cuando es null
+[31m[1mTypeError[22m: deviceStatusLabel is not a function[39m
+[36m [2m❯[22m app/site/presentation.test.ts:[2m93:12[22m[39m
+    [90m 91|[39m       note[33m:[39m [32m"Valor de ejemplo"[39m[33m,[39m
+    [90m 92|[39m     }[33m;[39m
+    [90m 93|[39m     [34mexpect[39m([34mdeviceStatusLabel[39m(device))[33m.[39m[34mtoBe[39m([32m"Sin datos disponibles"[39m)[33m;[39m
+    [90m   |[39m            [31m^[39m
+    [90m 94|[39m   })[33m;[39m
+    [90m 95|[39m })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m app/site/presentation.test.ts[2m > [22mhasDevices[2m > [22mes falso con la lista vacía
+[31m[1mTypeError[22m: hasDevices is not a function[39m
+[36m [2m❯[22m app/site/presentation.test.ts:[2m99:12[22m[39m
+    [90m 97|[39m [34mdescribe[39m([32m"hasDevices"[39m[33m,[39m () [33m=>[39m {
+    [90m 98|[39m   [34mit[39m([32m"es falso con la lista vacía"[39m[33m,[39m () [33m=>[39m {
+    [90m 99|[39m     [34mexpect[39m([34mhasDevices[39m([]))[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m   |[39m            [31m^[39m
+    [90m100|[39m   })[33m;[39m
+    [90m101|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m app/site/presentation.test.ts[2m > [22mhasDevices[2m > [22mes verdadero cuando hay al menos un dispositivo
+[31m[1mTypeError[22m: hasDevices is not a function[39m
+[36m [2m❯[22m app/site/presentation.test.ts:[2m110:12[22m[39m
+    [90m108|[39m       note[33m:[39m [32m"Valor de ejemplo"[39m[33m,[39m
+    [90m109|[39m     }[33m;[39m
+    [90m110|[39m     [34mexpect[39m([34mhasDevices[39m([device]))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   |[39m            [31m^[39m
+    [90m111|[39m   })[33m;[39m
+    [90m112|[39m })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m12 passed[39m[22m[90m (16)[39m
+[2m   Start at [22m 22:50:40
+[2m   Duration [22m 222ms[2m (tests 53%, transform 31%, import 11%, worker 4%)[22m
+
+[ELIFECYCLE] Test failed. See above for more details.

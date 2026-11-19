@@ -10,5 +10,8 @@ export const exampleSite: SiteOverview = {
     { label: "Batería", value: 72, unit: "%", icon: "◧", note: "Valor de ejemplo", measuredAt: null },
     { label: "Estado de red", value: null, unit: "", icon: "⌁", note: "Sin datos disponibles", measuredAt: null },
   ],
-  devices: [],
+  devices: [
+    { id: "dev-inversor-1", name: "Inversor solar", kind: "inversor", status: "En línea", note: "Valor de ejemplo" },
+    { id: "dev-bateria-1", name: "Batería doméstica", kind: "batería", status: null, note: "Valor de ejemplo" },
+  ],
 };

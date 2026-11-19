@@ -75,3 +75,11 @@ h1 em, .note-panel h2 em { font-weight: normal; color: #557a20; }
 @media (max-width: 900px) { .container { width: calc(100% - 48px); } .header { padding-inline: 24px; gap: 30px; } .metrics { grid-template-columns: repeat(2, 1fr); } .lower-grid { grid-template-columns: 1fr; } .intro-index { display: none; } }
 @media (max-width: 600px) { .header { flex-wrap: wrap; gap: 0; padding-top: 17px; } .header-tag { font-size: 9px; } nav { order: 3; width: 100%; height: 49px; gap: 24px; overflow-x: auto; white-space: nowrap; } .intro { padding-block: 48px 38px; } .demo-label { display: none; } .section-heading { display: block; padding-top: 38px; } .site-meta { margin-top: 15px; } .metric { padding: 17px; min-height: 150px; } .metric-value { font-size: 28px; } .devices-panel, .note-panel { padding: 23px; } .empty-state { align-items: flex-start; } .empty-symbol { width: 55px; height: 55px; } .footer { flex-wrap: wrap; line-height: 1.5; } .footer span:nth-child(2) { display: none; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+.device-list { list-style: none; margin: 0; padding: 10px 0 0; display: grid; gap: 16px; }
+.device-item { border-top: 1px solid #eef1eb; padding-top: 16px; }
+.device-item:first-child { border-top: 0; padding-top: 0; }
+.device-name { font-size: 15px; font-weight: 600; }
+.device-kind { color: #607568; font-size: 12px; margin-left: 8px; text-transform: capitalize; }
+.device-status { font-size: 13px; margin-top: 4px; }
+.device-note { color: #607568; font-size: 11px; margin-top: 2px; }

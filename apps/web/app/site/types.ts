@@ -13,6 +13,11 @@ export interface Reading {
 export interface DeviceSummary {
   id: string;
   name: string;
+  kind: string;
+  /** Estado del equipo, o null si no hay dato. */
+  status: string | null;
+  /** Nota de presentación; en la fixture siempre es "Valor de ejemplo". */
+  note: string;
 }
 
 export interface SiteOverview {

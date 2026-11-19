@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatReading, freshnessLabel, readingFreshness } from "./presentation";
+import {
+  deviceStatusLabel,
+  formatReading,
+  freshnessLabel,
+  hasDevices,
+  readingFreshness,
+} from "./presentation";
+import type { DeviceSummary } from "./types";
 
 describe("formatReading", () => {
   it("formatea el valor con su unidad en español", () => {
@@ -60,5 +67,46 @@ describe("freshnessLabel", () => {
 
   it("avisa cuando la lectura está desactualizada", () => {
     expect(freshnessLabel("2026-11-16T09:00:00Z", now)).toBe("Datos desactualizados · hace 3 h");
+  });
+});
+
+describe("deviceStatusLabel", () => {
+  it("muestra el estado presente del dispositivo", () => {
+    const device: DeviceSummary = {
+      id: "dev-inversor-1",
+      name: "Inversor solar",
+      kind: "inversor",
+      status: "En línea",
+      note: "Valor de ejemplo",
+    };
+    expect(deviceStatusLabel(device)).toBe("En línea");
+  });
+
+  it("no inventa estado cuando es null", () => {
+    const device: DeviceSummary = {
+      id: "dev-bateria-1",
+      name: "Batería doméstica",
+      kind: "batería",
+      status: null,
+      note: "Valor de ejemplo",
+    };
+    expect(deviceStatusLabel(device)).toBe("Sin datos disponibles");
+  });
+});
+
+describe("hasDevices", () => {
+  it("es falso con la lista vacía", () => {
+    expect(hasDevices([])).toBe(false);
+  });
+
+  it("es verdadero cuando hay al menos un dispositivo", () => {
+    const device: DeviceSummary = {
+      id: "dev-inversor-1",
+      name: "Inversor solar",
+      kind: "inversor",
+      status: "En línea",
+      note: "Valor de ejemplo",
+    };
+    expect(hasDevices([device])).toBe(true);
   });
 });

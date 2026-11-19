@@ -1,4 +1,4 @@
-import type { Freshness } from "./types";
+import type { DeviceSummary, Freshness } from "./types";
 
 const DEFAULT_STALE_AFTER_MINUTES = 30;
 
@@ -41,4 +41,16 @@ export function formatReading(value: number | null, unit: string): string {
     maximumFractionDigits: 2,
   }).format(value);
   return unit ? `${formatted} ${unit}` : formatted;
+}
+
+/** Etiqueta de estado de un dispositivo, sin inventar datos. */
+export function deviceStatusLabel(device: DeviceSummary): string {
+  if (device.status === null) return "Sin datos disponibles";
+  const status = device.status.trim();
+  return status === "" ? "Sin datos disponibles" : status;
+}
+
+/** Indica si hay al menos un dispositivo que mostrar. */
+export function hasDevices(devices: DeviceSummary[]): boolean {
+  return devices.length > 0;
 }
