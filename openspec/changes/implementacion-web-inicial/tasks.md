@@ -54,7 +54,7 @@ Referencias: `README.md`, `docs/environment.md`, `openspec/changes/validacion-vi
 - [x] 5.3 Comprobar que la interfaz identifica datos sintéticos, presenta correctamente estados vacíos y faltantes y no afirma capacidades de hardware inexistentes.
 - [x] 5.4 Revisar cambios y dependencias, fijar lockfile y corregir fallos; registrar riesgos y pruebas no ejecutadas.
 - [x] 5.5 Actualizar el plan existente de Notion con avances y bloqueos si el conector funciona; la actualización del 2026-11-16 fue confirmada. Actualizar Second Brain solo si aporta información de seguimiento estable y sin duplicar la documentación canónica.
-- [ ] 5.6 Preparar resumen para revisión y siguiente fase; no hacer push, despliegue ni publicación sin autorización explícita. El commit inicial se gestiona por separado.
+- [x] 5.6 Preparar resumen para revisión y siguiente fase; no hacer push, despliegue ni publicación sin autorización explícita. El commit inicial se gestiona por separado. Resumen en `docs/evidence/revision-web-inicial-2026-11-19/resumen.md` (2026-11-19).
 
 ## Fuera de alcance y pendientes posteriores
 
