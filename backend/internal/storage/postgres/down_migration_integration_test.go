@@ -99,6 +99,46 @@ func TestIntegrationDownMigrationsExecute(t *testing.T) {
 	})
 }
 
+// TestIntegrationAdminWriteRollbackArchivesTheAuditTrail proves that the 000003
+// rollback does not destroy the audit trail when it is used on its own. The
+// 000004 rollback archives the audit trail as well, but an operator can roll
+// back a single version, and the evidence of who changed the memberships has
+// to survive that too.
+func TestIntegrationAdminWriteRollbackArchivesTheAuditTrail(t *testing.T) {
+	superuserURL := integrationSuperuserURL(t)
+
+	environment := newIntegrationEnvironment(t, superuserURL)
+	ctx := context.Background()
+
+	adminPool := connect(t, environment.adminURL)
+	defer adminPool.Close()
+	if _, err := adminPool.Exec(ctx, "SELECT app.create_organization('org-archive', 'Archive Org')"); err != nil {
+		t.Fatalf("create organization: %v", err)
+	}
+	if _, err := adminPool.Exec(ctx, "SELECT app.grant_membership('org-archive', 'dev|user-a', 'viewer')"); err != nil {
+		t.Fatalf("grant membership: %v", err)
+	}
+
+	privilegedPool := connect(t, withDatabase(superuserURL, environment.databaseName))
+	defer privilegedPool.Close()
+
+	executeSQLFile(t, ctx, privilegedPool, adminWriteDownMigrationPath)
+
+	// The audit trail is archived, not erased.
+	var archived int
+	if err := privilegedPool.QueryRow(ctx, "SELECT count(*) FROM public.admin_audit_log_archive_000003").Scan(&archived); err != nil {
+		t.Fatalf("read the audit archive: %v", err)
+	}
+	if archived == 0 {
+		t.Fatal("the audit archive is empty after the rollback")
+	}
+
+	// The audit trail itself disappears with the app schema.
+	if _, err := privilegedPool.Exec(ctx, "SELECT count(*) FROM app.admin_audit_log"); err == nil {
+		t.Fatal("the audit trail still exists after the rollback")
+	}
+}
+
 func executeSQLFile(t *testing.T, ctx context.Context, pool *pgxpool.Pool, path string) {
 	t.Helper()
 

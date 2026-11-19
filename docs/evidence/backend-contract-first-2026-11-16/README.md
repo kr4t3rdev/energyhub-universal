@@ -9,6 +9,7 @@ Fecha: 2026-11-16 (actualizado 2026-11-18)
 - `go test -race ./...`: PASS.
 - Toolchain: Go 1.27.4, fijada en `backend/go.mod` y usada por CI mediante `go-version-file: backend/go.mod`.
 - Integración en CI: el job de backend levanta un PostgreSQL 17 como servicio y ejecuta la suite `TestIntegration` con `TEST_DATABASE_URL`, así que el aislamiento de tenants y la frontera administrativa se comprueban en cada ejecución, no solo en la máquina del desarrollador.
+- Reversiones: PASS. La reversión de `000003` se corrigió sin tocar su `.up.sql` (los `.down.sql` son referencias manuales y no se ejecutan automáticamente): ya no falla al revocar privilegios sobre funciones que acababa de eliminar, deja el rol runtime con lectura, y archiva la traza de auditoría en `public.admin_audit_log_archive_000003` antes de eliminar el esquema `app`. Cubierto por `TestIntegrationDownMigrationsExecute` y `TestIntegrationAdminWriteRollbackArchivesTheAuditTrail`.
 - OpenAPI YAML parse: PASS (`contracts/openapi/next-phase-proposal.yaml`).
 - RED/GREEN del paquete de contratos: `backend/internal/contracts/overview_test.go`.
 - Frontera tenant-aware: `go test ./internal/site` PASS, cobertura de `site` 84.6%.

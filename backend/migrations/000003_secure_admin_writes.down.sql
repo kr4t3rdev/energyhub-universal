@@ -25,6 +25,21 @@ $$;
 DROP FUNCTION IF EXISTS app.create_organization(text, text);
 DROP FUNCTION IF EXISTS app.grant_membership(text, text, text);
 DROP FUNCTION IF EXISTS app.revoke_membership(text, text);
+
+-- The audit trail is archived before it is dropped. The 000004 rollback
+-- archives it as well, but this file can be used on its own, and a rollback
+-- must never erase the evidence of who changed the memberships.
+DO $$
+BEGIN
+    IF to_regclass('app.admin_audit_log') IS NULL THEN
+        RETURN;
+    END IF;
+    EXECUTE 'DROP TABLE IF EXISTS public.admin_audit_log_archive_000003';
+    EXECUTE 'CREATE TABLE public.admin_audit_log_archive_000003 (LIKE app.admin_audit_log EXCLUDING IDENTITY)';
+    EXECUTE 'INSERT INTO public.admin_audit_log_archive_000003 SELECT * FROM app.admin_audit_log';
+END
+$$;
+
 DROP TABLE IF EXISTS app.admin_audit_log;
 DROP SCHEMA IF EXISTS app;
 

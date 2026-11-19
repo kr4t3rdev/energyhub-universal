@@ -70,3 +70,11 @@ Las escrituras pasan por `app.create_organization`, `app.grant_membership` y `ap
 Las migraciones se aplican con un rol que pueda cambiar la propiedad de los objetos a `energyhub_owner`: un superusuario o un rol con esa pertenencia. Ese rol hereda `BYPASSRLS` y los privilegios de escritura, así que es una credencial privilegiada del job de despliegue: nunca debe ser la `DATABASE_URL` de la API.
 
 El `.down.sql` de `000004` devuelve el estado de `000003` y el de `000003` devuelve el de `000002`, incluida la frontera más débil basada en `app.is_system_admin`. Son reversiones manuales: se ejecutan con una conexión privilegiada y solo para volver a un estado anterior en un entorno controlado.
+
+Los `.down.sql` no se ejecutan automáticamente, así que corregirlos no cambia el estado de ninguna base ya aplicada: la regla de no editar una migración aplicada protege el archivo `.up.sql`, que es el que determina el estado de la base. Por eso el `.down.sql` de `000003` se corrigió el 2026-11-18 sin tocar su `.up.sql`:
+
+- Revocaba `EXECUTE` sobre funciones que el propio archivo acababa de eliminar, así que la reversión fallaba.
+- Revocaba el `SELECT` del rol runtime, que el bootstrap había concedido, y dejaba la API sin poder leer.
+- Ahora archiva la traza de auditoría en `public.admin_audit_log_archive_000003` antes de eliminar el esquema `app`, porque una reversión no puede borrar la evidencia de quién cambió las membresías. La reversión de `000004` hace lo mismo con `public.admin_audit_log_archive_000004`.
+
+Ambas reversiones están cubiertas por pruebas de integración reales (`TestIntegrationDownMigrationsExecute` y `TestIntegrationAdminWriteRollbackArchivesTheAuditTrail`).
