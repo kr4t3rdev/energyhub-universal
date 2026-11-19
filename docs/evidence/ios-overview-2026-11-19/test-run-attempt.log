@@ -1,0 +1,11 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project EnergyHub.xcodeproj -scheme EnergyHub -sdk iphonesimulator -configuration Debug -destination "generic/platform=iOS Simulator" -derivedDataPath /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData SYMROOT=/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products OBJROOT=/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates CODE_SIGNING_ALLOWED=NO test
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+    OBJROOT = /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates
+    SDKROOT = iphonesimulator27.0
+    SYMROOT = /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products
+
+2026-11-19 06:07:33.378 xcodebuild[229:520474] Writing error result bundle to /var/folders/n_/2tnvb4k17q7bvzg4kk6lb14h0000gn/T/ResultBundle_2026-19-11_06-07-0033.xcresult
+xcodebuild: error: Failed to build project EnergyHub with scheme EnergyHub.: Cannot test target “EnergyHubTests” on “Any iOS Simulator Device”: Tests must be run on a concrete device

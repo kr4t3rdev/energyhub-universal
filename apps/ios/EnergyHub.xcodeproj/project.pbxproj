@@ -8,7 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		11C29966CEC8C446746A2335 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67278AF149733F73EFA91B59 /* ContentView.swift */; };
+		290E44F9F8DB85D3522A5D18 /* SiteOverview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 102F63D3D6A170B9B6A0EFC8 /* SiteOverview.swift */; };
 		4CDACE02A75BFAC79C110628 /* EnergyHubApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 445772D7D341473D460990D3 /* EnergyHubApp.swift */; };
+		7DFC1983424C68E8D11F0CB3 /* SitePresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 963F83A81A49FCA48F7F3611 /* SitePresentationTests.swift */; };
+		9A7B9006F696667996228151 /* SitePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4D0447EFA866402EC175B77 /* SitePresentation.swift */; };
 		D08AD38771C8454A2C009CD8 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFAF0F062650581075862C5F /* SmokeTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -23,11 +26,14 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		102F63D3D6A170B9B6A0EFC8 /* SiteOverview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteOverview.swift; sourceTree = "<group>"; };
 		441F295878920599BC7A8BD6 /* EnergyHubTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = EnergyHubTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		445772D7D341473D460990D3 /* EnergyHubApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnergyHubApp.swift; sourceTree = "<group>"; };
 		67278AF149733F73EFA91B59 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		92794C726A6C31BE4078CFB1 /* EnergyHub.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = EnergyHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		963F83A81A49FCA48F7F3611 /* SitePresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SitePresentationTests.swift; sourceTree = "<group>"; };
 		AFAF0F062650581075862C5F /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
+		D4D0447EFA866402EC175B77 /* SitePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SitePresentation.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -43,6 +49,7 @@
 		27E93C22A48E829476C172FC /* EnergyHubTests */ = {
 			isa = PBXGroup;
 			children = (
+				963F83A81A49FCA48F7F3611 /* SitePresentationTests.swift */,
 				AFAF0F062650581075862C5F /* SmokeTests.swift */,
 			);
 			path = EnergyHubTests;
@@ -53,8 +60,18 @@
 			children = (
 				67278AF149733F73EFA91B59 /* ContentView.swift */,
 				445772D7D341473D460990D3 /* EnergyHubApp.swift */,
+				55F85946D30B30B0389F67E8 /* Site */,
 			);
 			path = EnergyHub;
+			sourceTree = "<group>";
+		};
+		55F85946D30B30B0389F67E8 /* Site */ = {
+			isa = PBXGroup;
+			children = (
+				102F63D3D6A170B9B6A0EFC8 /* SiteOverview.swift */,
+				D4D0447EFA866402EC175B77 /* SitePresentation.swift */,
+			);
+			path = Site;
 			sourceTree = "<group>";
 		};
 		FD7EAECBCF7D847F5F27EA6D = {
@@ -142,6 +159,8 @@
 			files = (
 				11C29966CEC8C446746A2335 /* ContentView.swift in Sources */,
 				4CDACE02A75BFAC79C110628 /* EnergyHubApp.swift in Sources */,
+				290E44F9F8DB85D3522A5D18 /* SiteOverview.swift in Sources */,
+				9A7B9006F696667996228151 /* SitePresentation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -149,6 +168,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7DFC1983424C68E8D11F0CB3 /* SitePresentationTests.swift in Sources */,
 				D08AD38771C8454A2C009CD8 /* SmokeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

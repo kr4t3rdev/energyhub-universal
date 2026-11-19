@@ -1,0 +1,432 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project EnergyHub.xcodeproj -scheme EnergyHub -sdk iphonesimulator -configuration Debug -destination "generic/platform=iOS Simulator" -derivedDataPath /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData SYMROOT=/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products OBJROOT=/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates CODE_SIGNING_ALLOWED=NO build-for-testing
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+    OBJROOT = /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates
+    SDKROOT = iphonesimulator27.0
+    SYMROOT = /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (2 targets)
+    Target 'EnergyHubTests' in project 'EnergyHub'
+        ➜ Explicit dependency on target 'EnergyHub' in project 'EnergyHub'
+    Target 'EnergyHub' in project 'EnergyHub' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 2b2228ff8baaf8e855fb274b5ad9c8f9
+Build description path: /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/XCBuildData/2b2228ff8baaf8e855fb274b5ad9c8f9.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-e829b21a6f8c9b70876ba0858053c0448dc58220667be655e1bcc261a7455254.sdkstatcache
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHub.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -o /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-e829b21a6f8c9b70876ba0858053c0448dc58220667be655e1bcc261a7455254.sdkstatcache
+
+ProcessInfoPlistFile /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator/EnergyHub.app/Info.plist /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/empty-EnergyHub.plist (in target 'EnergyHub' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    builtin-infoPlistUtility /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/empty-EnergyHub.plist -producttype com.apple.product-type.application -genpkginfo /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator/EnergyHub.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -o /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator/EnergyHub.app/Info.plist
+
+SwiftDriver EnergyHub normal arm64 com.apple.xcode.tools.swift.compiler (in target 'EnergyHub' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name EnergyHub -Onone @/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/Objects-normal/arm64/EnergyHub.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator -F /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-e829b21a6f8c9b70876ba0858053c0448dc58220667be655e1bcc261a7455254.sdkstatcache -output-file-map /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/Objects-normal/arm64/EnergyHub-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/Objects-normal/arm64/EnergyHub.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/Objects-normal/arm64/EnergyHub-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/Objects-normal/arm64/EnergyHub_const_extract_protocols.json -Xcc -iquote -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/EnergyHub-generated-files.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/EnergyHub-own-target-headers.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/EnergyHub-all-target-headers.hmap -Xcc -iquote -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/EnergyHub-project-headers.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator/include -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/DerivedSources-normal/arm64 -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/DerivedSources/arm64 -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/Objects-normal/arm64/EnergyHub-Swift.h -working-directory /Volumes/Server/Proyectos/energyhub-universal/apps/ios -experimental-emit-module-separately -disable-cmo
+
+SwiftDriver EnergyHubTests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'EnergyHubTests' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name EnergyHubTests -Onone @/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests.SwiftFileList -DDEBUG -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk/Developer/Library/Frameworks -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-e829b21a6f8c9b70876ba0858053c0448dc58220667be655e1bcc261a7455254.sdkstatcache -output-file-map /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests_const_extract_protocols.json -Xcc -iquote -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-generated-files.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-own-target-headers.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-all-target-headers.hmap -Xcc -iquote -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-project-headers.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator/include -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources-normal/arm64 -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources/arm64 -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests-Swift.h -working-directory /Volumes/Server/Proyectos/energyhub-universal/apps/ios -experimental-emit-module-separately -disable-cmo
+
+SwiftDriver EnergyHubTests normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'EnergyHubTests' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name EnergyHubTests -Onone @/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/EnergyHubTests.SwiftFileList -DDEBUG -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -target x86_64-apple-ios17.0-simulator -g -module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk/Developer/Library/Frameworks -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-e829b21a6f8c9b70876ba0858053c0448dc58220667be655e1bcc261a7455254.sdkstatcache -output-file-map /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/EnergyHubTests-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/EnergyHubTests.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/EnergyHubTests-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/EnergyHubTests_const_extract_protocols.json -Xcc -iquote -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-generated-files.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-own-target-headers.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-all-target-headers.hmap -Xcc -iquote -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-project-headers.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator/include -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources-normal/x86_64 -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources/x86_64 -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/EnergyHubTests-Swift.h -working-directory /Volumes/Server/Proyectos/energyhub-universal/apps/ios -experimental-emit-module-separately -disable-cmo
+
+SwiftDriver EnergyHub normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'EnergyHub' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name EnergyHub -Onone @/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/Objects-normal/x86_64/EnergyHub.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -target x86_64-apple-ios17.0-simulator -g -module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator -F /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-e829b21a6f8c9b70876ba0858053c0448dc58220667be655e1bcc261a7455254.sdkstatcache -output-file-map /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/Objects-normal/x86_64/EnergyHub-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/Objects-normal/x86_64/EnergyHub.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/Objects-normal/x86_64/EnergyHub-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/Objects-normal/x86_64/EnergyHub_const_extract_protocols.json -Xcc -iquote -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/EnergyHub-generated-files.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/EnergyHub-own-target-headers.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/EnergyHub-all-target-headers.hmap -Xcc -iquote -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/EnergyHub-project-headers.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator/include -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/DerivedSources-normal/x86_64 -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/DerivedSources/x86_64 -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHub.build/Objects-normal/x86_64/EnergyHub-Swift.h -working-directory /Volumes/Server/Proyectos/energyhub-universal/apps/ios -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules/XCUIAutomation-F4WRBN405LPDR6VD17SODRXSS.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules/XCUIAutomation-8RD4LS1KTINBDHORIL4F1MFOP.pcm
+
+SwiftCompile normal x86_64 Compiling\ ContentView.swift /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHub/ContentView.swift (in target 'EnergyHub' from project 'EnergyHub')
+
+SwiftCompile normal x86_64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHub/ContentView.swift (in target 'EnergyHub' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    builtin-SwiftPerFileCompile ContentView.swift
+
+SwiftCompile normal arm64 Compiling\ EnergyHubApp.swift /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHub/EnergyHubApp.swift (in target 'EnergyHub' from project 'EnergyHub')
+
+SwiftCompile normal arm64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHub/EnergyHubApp.swift (in target 'EnergyHub' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    builtin-SwiftPerFileCompile EnergyHubApp.swift
+
+SwiftCompile normal x86_64 Compiling\ EnergyHubApp.swift /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHub/EnergyHubApp.swift (in target 'EnergyHub' from project 'EnergyHub')
+
+SwiftCompile normal x86_64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHub/EnergyHubApp.swift (in target 'EnergyHub' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    builtin-SwiftPerFileCompile EnergyHubApp.swift
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ EnergyHub (in target 'EnergyHub' from project 'EnergyHub')
+
+SwiftCompile normal arm64 (in target 'EnergyHub' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    
+
+SwiftCompile normal arm64 Compiling\ ContentView.swift /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHub/ContentView.swift (in target 'EnergyHub' from project 'EnergyHub')
+
+SwiftCompile normal arm64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHub/ContentView.swift (in target 'EnergyHub' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    builtin-SwiftPerFileCompile ContentView.swift
+
+SwiftEmitModule normal x86_64 Emitting\ module\ for\ EnergyHub (in target 'EnergyHub' from project 'EnergyHub')
+
+SwiftCompile normal x86_64 (in target 'EnergyHub' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    
+
+SwiftExplicitDependencyCompileModuleFromInterface x86_64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules/XCUIAutomation-27WG3UOWNP4SJ.swiftmodule
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules/XCTest-6NY2UR75KSJ93V1LIH4WEG6RN.pcm
+
+SwiftExplicitDependencyCompileModuleFromInterface arm64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules/XCUIAutomation-QACPN10PVSVG.swiftmodule
+
+SwiftExplicitDependencyGeneratePcm arm64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules/XCTest-8DA8GU665ARKYUMN6ZPG7CMWY.pcm
+
+SwiftExplicitDependencyCompileModuleFromInterface x86_64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules/XCTest-15OPGTHUPAP51.swiftmodule
+
+SwiftExplicitDependencyCompileModuleFromInterface arm64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules/XCTest-H44SKPZFWLCK.swiftmodule
+
+SwiftEmitModule normal x86_64 Emitting\ module\ for\ EnergyHubTests (in target 'EnergyHubTests' from project 'EnergyHub')
+
+SwiftCompile normal x86_64 (in target 'EnergyHubTests' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ EnergyHubTests (in target 'EnergyHubTests' from project 'EnergyHub')
+
+SwiftCompile normal arm64 (in target 'EnergyHubTests' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    
+
+SwiftCompile normal x86_64 Compiling\ SmokeTests.swift /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SmokeTests.swift (in target 'EnergyHubTests' from project 'EnergyHub')
+
+SwiftCompile normal x86_64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SmokeTests.swift (in target 'EnergyHubTests' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    builtin-SwiftPerFileCompile SmokeTests.swift
+
+SwiftCompile normal arm64 Compiling\ SmokeTests.swift /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SmokeTests.swift (in target 'EnergyHubTests' from project 'EnergyHub')
+
+SwiftCompile normal arm64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SmokeTests.swift (in target 'EnergyHubTests' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    builtin-SwiftPerFileCompile SmokeTests.swift
+
+SwiftCompile normal x86_64 Compiling\ SitePresentationTests.swift /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift (in target 'EnergyHubTests' from project 'EnergyHub')
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:6:24: error: cannot find 'formatReading' in scope
+ 4 | final class SitePresentationTests: XCTestCase {
+ 5 |     func testFormatReadingWithValueAndUnit() {
+ 6 |         XCTAssertEqual(formatReading(1.24, unit: "kW"), "1,24 kW")
+   |                        `- error: cannot find 'formatReading' in scope
+ 7 |     }
+ 8 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:10:24: error: cannot find 'formatReading' in scope
+ 8 | 
+ 9 |     func testFormatReadingWithValuePercent() {
+10 |         XCTAssertEqual(formatReading(72, unit: "%"), "72 %")
+   |                        `- error: cannot find 'formatReading' in scope
+11 |     }
+12 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:14:24: error: cannot find 'formatReading' in scope
+12 | 
+13 |     func testFormatReadingNilValueShowsDash() {
+14 |         XCTAssertEqual(formatReading(nil, unit: "kW"), "—")
+   |                        `- error: cannot find 'formatReading' in scope
+15 |     }
+16 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:18:24: error: cannot find 'formatReading' in scope
+16 | 
+17 |     func testFormatReadingNilValueNoUnitShowsDash() {
+18 |         XCTAssertEqual(formatReading(nil, unit: ""), "—")
+   |                        `- error: cannot find 'formatReading' in scope
+19 |     }
+20 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:22:22: error: cannot find 'DeviceSummary' in scope
+20 | 
+21 |     func testDeviceStatusLabelWithStatus() {
+22 |         let device = DeviceSummary(id: "dev-inversor-1", name: "Inversor solar", kind: "inversor", status: "En línea", note: "Valor de ejemplo")
+   |                      `- error: cannot find 'DeviceSummary' in scope
+23 |         XCTAssertEqual(deviceStatusLabel(device), "En línea")
+24 |     }
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:23:24: error: cannot find 'deviceStatusLabel' in scope
+21 |     func testDeviceStatusLabelWithStatus() {
+22 |         let device = DeviceSummary(id: "dev-inversor-1", name: "Inversor solar", kind: "inversor", status: "En línea", note: "Valor de ejemplo")
+23 |         XCTAssertEqual(deviceStatusLabel(device), "En línea")
+   |                        `- error: cannot find 'deviceStatusLabel' in scope
+24 |     }
+25 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:27:22: error: cannot find 'DeviceSummary' in scope
+25 | 
+26 |     func testDeviceStatusLabelNilStatusShowsNoData() {
+27 |         let device = DeviceSummary(id: "dev-bateria-1", name: "Batería doméstica", kind: "batería", status: nil, note: "Valor de ejemplo")
+   |                      `- error: cannot find 'DeviceSummary' in scope
+28 |         XCTAssertEqual(deviceStatusLabel(device), "Sin datos disponibles")
+29 |     }
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:28:24: error: cannot find 'deviceStatusLabel' in scope
+26 |     func testDeviceStatusLabelNilStatusShowsNoData() {
+27 |         let device = DeviceSummary(id: "dev-bateria-1", name: "Batería doméstica", kind: "batería", status: nil, note: "Valor de ejemplo")
+28 |         XCTAssertEqual(deviceStatusLabel(device), "Sin datos disponibles")
+   |                        `- error: cannot find 'deviceStatusLabel' in scope
+29 |     }
+30 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:32:22: error: cannot find 'DeviceSummary' in scope
+30 | 
+31 |     func testDeviceStatusLabelBlankStatusShowsNoData() {
+32 |         let device = DeviceSummary(id: "dev-x", name: "Equipo", kind: "otro", status: "   ", note: "Valor de ejemplo")
+   |                      `- error: cannot find 'DeviceSummary' in scope
+33 |         XCTAssertEqual(deviceStatusLabel(device), "Sin datos disponibles")
+34 |     }
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:33:24: error: cannot find 'deviceStatusLabel' in scope
+31 |     func testDeviceStatusLabelBlankStatusShowsNoData() {
+32 |         let device = DeviceSummary(id: "dev-x", name: "Equipo", kind: "otro", status: "   ", note: "Valor de ejemplo")
+33 |         XCTAssertEqual(deviceStatusLabel(device), "Sin datos disponibles")
+   |                        `- error: cannot find 'deviceStatusLabel' in scope
+34 |     }
+35 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:37:24: error: cannot find 'hasDevices' in scope
+35 | 
+36 |     func testHasDevicesEmptyIsFalse() {
+37 |         XCTAssertFalse(hasDevices([]))
+   |                        `- error: cannot find 'hasDevices' in scope
+38 |     }
+39 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:41:23: error: cannot find 'hasDevices' in scope
+39 | 
+40 |     func testHasDevicesNonEmptyIsTrue() {
+41 |         XCTAssertTrue(hasDevices(exampleSite.devices))
+   |                       `- error: cannot find 'hasDevices' in scope
+42 |     }
+43 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:41:34: error: cannot find 'exampleSite' in scope
+39 | 
+40 |     func testHasDevicesNonEmptyIsTrue() {
+41 |         XCTAssertTrue(hasDevices(exampleSite.devices))
+   |                                  `- error: cannot find 'exampleSite' in scope
+42 |     }
+43 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:45:24: error: cannot find 'exampleSite' in scope
+43 | 
+44 |     func testExampleSiteHasExpectedContent() {
+45 |         XCTAssertEqual(exampleSite.name, "Casa de ejemplo")
+   |                        `- error: cannot find 'exampleSite' in scope
+46 |         XCTAssertEqual(exampleSite.readings.count, 4)
+47 |         XCTAssertEqual(exampleSite.devices.count, 2)
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:46:24: error: cannot find 'exampleSite' in scope
+44 |     func testExampleSiteHasExpectedContent() {
+45 |         XCTAssertEqual(exampleSite.name, "Casa de ejemplo")
+46 |         XCTAssertEqual(exampleSite.readings.count, 4)
+   |                        `- error: cannot find 'exampleSite' in scope
+47 |         XCTAssertEqual(exampleSite.devices.count, 2)
+48 |     }
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:47:24: error: cannot find 'exampleSite' in scope
+45 |         XCTAssertEqual(exampleSite.name, "Casa de ejemplo")
+46 |         XCTAssertEqual(exampleSite.readings.count, 4)
+47 |         XCTAssertEqual(exampleSite.devices.count, 2)
+   |                        `- error: cannot find 'exampleSite' in scope
+48 |     }
+49 | }
+Failed frontend command:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c -primary-file /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SmokeTests.swift -emit-dependencies-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/SitePresentationTests.d -emit-const-values-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/SitePresentationTests.swiftconstvalues -emit-reference-dependencies-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/SitePresentationTests.swiftdeps -serialize-diagnostics-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/SitePresentationTests.dia -target x86_64-apple-ios17.0-simulator -disable-cross-import-overlay-search -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libFoundationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#FoundationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libObservationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#ObservationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libPreviewsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#PreviewsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftUIMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftUIMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/EnergyHubTests-dependencies-2.json -enable-objc-interop -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -I /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk/Developer/Library/Frameworks -module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=4 -swift-version 5 -Onone -D DEBUG -serialize-debugging-options -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios -enable-anonymous-context-mangled-names -file-compilation-dir /Volumes/Server/Proyectos/energyhub-universal/apps/ios -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-e829b21a6f8c9b70876ba0858053c0448dc58220667be655e1bcc261a7455254.sdkstatcache -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -Xcc -iquote -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-generated-files.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-own-target-headers.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-all-target-headers.hmap -Xcc -iquote -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-project-headers.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator/include -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources-normal/x86_64 -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources/x86_64 -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name EnergyHubTests -const-gather-protocols-file /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/EnergyHubTests_const_extract_protocols.json -disable-clang-spi -clang-target x86_64-apple-ios27.0-simulator -target-sdk-version 27.0 -target-sdk-name iphonesimulator27.0 -in-process-plugin-server-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -o /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/SitePresentationTests.o -debug-module-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/EnergyHubTests.swiftmodule -index-unit-output-path /EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/x86_64/SitePresentationTests.o -index-store-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/Index.noindex/DataStore -index-system-modules
+
+SwiftCompile normal x86_64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift (in target 'EnergyHubTests' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    builtin-SwiftPerFileCompile SitePresentationTests.swift
+
+SwiftDriverJobDiscovery normal x86_64 Emitting module for EnergyHubTests (in target 'EnergyHubTests' from project 'EnergyHub')
+
+SwiftCompile normal arm64 Compiling\ SitePresentationTests.swift /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift (in target 'EnergyHubTests' from project 'EnergyHub')
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:6:24: error: cannot find 'formatReading' in scope
+ 4 | final class SitePresentationTests: XCTestCase {
+ 5 |     func testFormatReadingWithValueAndUnit() {
+ 6 |         XCTAssertEqual(formatReading(1.24, unit: "kW"), "1,24 kW")
+   |                        `- error: cannot find 'formatReading' in scope
+ 7 |     }
+ 8 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:10:24: error: cannot find 'formatReading' in scope
+ 8 | 
+ 9 |     func testFormatReadingWithValuePercent() {
+10 |         XCTAssertEqual(formatReading(72, unit: "%"), "72 %")
+   |                        `- error: cannot find 'formatReading' in scope
+11 |     }
+12 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:14:24: error: cannot find 'formatReading' in scope
+12 | 
+13 |     func testFormatReadingNilValueShowsDash() {
+14 |         XCTAssertEqual(formatReading(nil, unit: "kW"), "—")
+   |                        `- error: cannot find 'formatReading' in scope
+15 |     }
+16 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:18:24: error: cannot find 'formatReading' in scope
+16 | 
+17 |     func testFormatReadingNilValueNoUnitShowsDash() {
+18 |         XCTAssertEqual(formatReading(nil, unit: ""), "—")
+   |                        `- error: cannot find 'formatReading' in scope
+19 |     }
+20 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:22:22: error: cannot find 'DeviceSummary' in scope
+20 | 
+21 |     func testDeviceStatusLabelWithStatus() {
+22 |         let device = DeviceSummary(id: "dev-inversor-1", name: "Inversor solar", kind: "inversor", status: "En línea", note: "Valor de ejemplo")
+   |                      `- error: cannot find 'DeviceSummary' in scope
+23 |         XCTAssertEqual(deviceStatusLabel(device), "En línea")
+24 |     }
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:23:24: error: cannot find 'deviceStatusLabel' in scope
+21 |     func testDeviceStatusLabelWithStatus() {
+22 |         let device = DeviceSummary(id: "dev-inversor-1", name: "Inversor solar", kind: "inversor", status: "En línea", note: "Valor de ejemplo")
+23 |         XCTAssertEqual(deviceStatusLabel(device), "En línea")
+   |                        `- error: cannot find 'deviceStatusLabel' in scope
+24 |     }
+25 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:27:22: error: cannot find 'DeviceSummary' in scope
+25 | 
+26 |     func testDeviceStatusLabelNilStatusShowsNoData() {
+27 |         let device = DeviceSummary(id: "dev-bateria-1", name: "Batería doméstica", kind: "batería", status: nil, note: "Valor de ejemplo")
+   |                      `- error: cannot find 'DeviceSummary' in scope
+28 |         XCTAssertEqual(deviceStatusLabel(device), "Sin datos disponibles")
+29 |     }
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:28:24: error: cannot find 'deviceStatusLabel' in scope
+26 |     func testDeviceStatusLabelNilStatusShowsNoData() {
+27 |         let device = DeviceSummary(id: "dev-bateria-1", name: "Batería doméstica", kind: "batería", status: nil, note: "Valor de ejemplo")
+28 |         XCTAssertEqual(deviceStatusLabel(device), "Sin datos disponibles")
+   |                        `- error: cannot find 'deviceStatusLabel' in scope
+29 |     }
+30 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:32:22: error: cannot find 'DeviceSummary' in scope
+30 | 
+31 |     func testDeviceStatusLabelBlankStatusShowsNoData() {
+32 |         let device = DeviceSummary(id: "dev-x", name: "Equipo", kind: "otro", status: "   ", note: "Valor de ejemplo")
+   |                      `- error: cannot find 'DeviceSummary' in scope
+33 |         XCTAssertEqual(deviceStatusLabel(device), "Sin datos disponibles")
+34 |     }
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:33:24: error: cannot find 'deviceStatusLabel' in scope
+31 |     func testDeviceStatusLabelBlankStatusShowsNoData() {
+32 |         let device = DeviceSummary(id: "dev-x", name: "Equipo", kind: "otro", status: "   ", note: "Valor de ejemplo")
+33 |         XCTAssertEqual(deviceStatusLabel(device), "Sin datos disponibles")
+   |                        `- error: cannot find 'deviceStatusLabel' in scope
+34 |     }
+35 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:37:24: error: cannot find 'hasDevices' in scope
+35 | 
+36 |     func testHasDevicesEmptyIsFalse() {
+37 |         XCTAssertFalse(hasDevices([]))
+   |                        `- error: cannot find 'hasDevices' in scope
+38 |     }
+39 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:41:23: error: cannot find 'hasDevices' in scope
+39 | 
+40 |     func testHasDevicesNonEmptyIsTrue() {
+41 |         XCTAssertTrue(hasDevices(exampleSite.devices))
+   |                       `- error: cannot find 'hasDevices' in scope
+42 |     }
+43 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:41:34: error: cannot find 'exampleSite' in scope
+39 | 
+40 |     func testHasDevicesNonEmptyIsTrue() {
+41 |         XCTAssertTrue(hasDevices(exampleSite.devices))
+   |                                  `- error: cannot find 'exampleSite' in scope
+42 |     }
+43 | 
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:45:24: error: cannot find 'exampleSite' in scope
+43 | 
+44 |     func testExampleSiteHasExpectedContent() {
+45 |         XCTAssertEqual(exampleSite.name, "Casa de ejemplo")
+   |                        `- error: cannot find 'exampleSite' in scope
+46 |         XCTAssertEqual(exampleSite.readings.count, 4)
+47 |         XCTAssertEqual(exampleSite.devices.count, 2)
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:46:24: error: cannot find 'exampleSite' in scope
+44 |     func testExampleSiteHasExpectedContent() {
+45 |         XCTAssertEqual(exampleSite.name, "Casa de ejemplo")
+46 |         XCTAssertEqual(exampleSite.readings.count, 4)
+   |                        `- error: cannot find 'exampleSite' in scope
+47 |         XCTAssertEqual(exampleSite.devices.count, 2)
+48 |     }
+
+/Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift:47:24: error: cannot find 'exampleSite' in scope
+45 |         XCTAssertEqual(exampleSite.name, "Casa de ejemplo")
+46 |         XCTAssertEqual(exampleSite.readings.count, 4)
+47 |         XCTAssertEqual(exampleSite.devices.count, 2)
+   |                        `- error: cannot find 'exampleSite' in scope
+48 |     }
+49 | }
+Failed frontend command:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c -primary-file /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SmokeTests.swift -emit-dependencies-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/SitePresentationTests.d -emit-const-values-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/SitePresentationTests.swiftconstvalues -emit-reference-dependencies-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/SitePresentationTests.swiftdeps -serialize-diagnostics-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/SitePresentationTests.dia -target arm64-apple-ios17.0-simulator -disable-cross-import-overlay-search -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libFoundationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#FoundationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libObservationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#ObservationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libPreviewsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#PreviewsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftUIMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftUIMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests-dependencies-1.json -Xllvm -aarch64-use-tbi -enable-objc-interop -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -I /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk/Developer/Library/Frameworks -module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=4 -swift-version 5 -Onone -D DEBUG -serialize-debugging-options -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios -enable-anonymous-context-mangled-names -file-compilation-dir /Volumes/Server/Proyectos/energyhub-universal/apps/ios -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-e829b21a6f8c9b70876ba0858053c0448dc58220667be655e1bcc261a7455254.sdkstatcache -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -Xcc -iquote -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-generated-files.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-own-target-headers.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-all-target-headers.hmap -Xcc -iquote -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-project-headers.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator/include -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources-normal/arm64 -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources/arm64 -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name EnergyHubTests -const-gather-protocols-file /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests_const_extract_protocols.json -disable-clang-spi -clang-target arm64-apple-ios27.0-simulator -target-sdk-version 27.0 -target-sdk-name iphonesimulator27.0 -in-process-plugin-server-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -o /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/SitePresentationTests.o -debug-module-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests.swiftmodule -index-unit-output-path /EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/SitePresentationTests.o -index-store-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/Index.noindex/DataStore -index-system-modules
+
+SwiftCompile normal arm64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift (in target 'EnergyHubTests' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    builtin-SwiftPerFileCompile SitePresentationTests.swift
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for EnergyHubTests (in target 'EnergyHubTests' from project 'EnergyHub')
+
+SwiftDriver\ Compilation\ Requirements EnergyHubTests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'EnergyHubTests' from project 'EnergyHub')
+    cd /Volumes/Server/Proyectos/energyhub-universal/apps/ios
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name EnergyHubTests -Onone @/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests.SwiftFileList -DDEBUG -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk/Developer/Library/Frameworks -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-e829b21a6f8c9b70876ba0858053c0448dc58220667be655e1bcc261a7455254.sdkstatcache -output-file-map /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests_const_extract_protocols.json -Xcc -iquote -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-generated-files.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-own-target-headers.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-all-target-headers.hmap -Xcc -iquote -Xcc /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/EnergyHubTests-project-headers.hmap -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-build-products/Debug-iphonesimulator/include -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources-normal/arm64 -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources/arm64 -Xcc -I/Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/EnergyHub.build/Debug-iphonesimulator/EnergyHubTests.build/Objects-normal/arm64/EnergyHubTests-Swift.h -working-directory /Volumes/Server/Proyectos/energyhub-universal/apps/ios -experimental-emit-module-separately -disable-cmo
+
+PruneExplicitPrecompiledModules /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/SDKExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/SwiftExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Volumes/Server/Proyectos/energyhub-universal/apps/ios/.local/DerivedData/ios-intermediates/ExplicitPrecompiledModules
+
+** TEST BUILD FAILED **
+
+
+The following build commands failed:
+	SwiftCompile normal x86_64 Compiling\ SitePresentationTests.swift /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift (in target 'EnergyHubTests' from project 'EnergyHub')
+	SwiftCompile normal x86_64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift (in target 'EnergyHubTests' from project 'EnergyHub')
+	SwiftCompile normal arm64 Compiling\ SitePresentationTests.swift /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift (in target 'EnergyHubTests' from project 'EnergyHub')
+	SwiftCompile normal arm64 /Volumes/Server/Proyectos/energyhub-universal/apps/ios/EnergyHubTests/SitePresentationTests.swift (in target 'EnergyHubTests' from project 'EnergyHub')
+	Building project EnergyHub for testing with scheme EnergyHub
+(5 failures)
