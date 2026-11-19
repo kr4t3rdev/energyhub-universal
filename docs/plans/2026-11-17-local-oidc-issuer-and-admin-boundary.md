@@ -153,11 +153,34 @@ Seguimiento del diseño anterior, con dos commits adicionales:
   cadena de `GRANT` o una credencial administrativa compartida hacen fallar el despliegue en vez de
   abrir una vía silenciosa.
 
+- Última ronda, con tres hallazgos propios y una brecha de proceso:
+
+  - La suite de integración liberaba los privilegios del rol temporal solo después de eliminar la base
+    de prueba, así que el rol con `TRUNCATE` no se podía borrar y el cluster acumulaba roles
+    `energyhub_it_truncate_*`. Ahora los privilegios se liberan antes de borrar el rol y el cluster
+    queda limpio, comprobado con `pg_roles` y `pg_database`.
+  - `cmd/api`, `cmd/membership` y `cmd/migrate` quitan la contraseña del DSN de sus errores de conexión:
+    el driver de PostgreSQL la incluye sin filtrar en el error de una URL mal formada y ese error
+    llegaba al log de arranque.
+  - `dev-stack.sh` exportaba el DSN del runtime como argumento de `env`, así que era visible con `ps`.
+    Ahora el API arranca en un subshell que elimina las credenciales administrativas del entorno heredado
+    y exporta el DSN del runtime.
+  - El job de backend de CI levanta un PostgreSQL 17 como servicio y ejecuta la suite `TestIntegration`,
+    de modo que el aislamiento y la frontera administrativa se comprueban en cada ejecución y no solo en
+    la máquina del desarrollador.
+  - La reversión de `000003` archivaba mal la evidencia: eliminaba la traza de auditoría sin archivarla
+    cuando se usaba sin la reversión de `000004`. Ahora archiva en
+    `public.admin_audit_log_archive_000003` antes de eliminar el esquema `app`, y el `.down.sql` deja al
+    rol runtime con lectura. La corrección no toca el `.up.sql` de `000003`: los `.down.sql` son
+    referencias manuales y no se ejecutan automáticamente, así que no cambian el estado de ninguna base
+    ya aplicada.
+
 Verificado: `go test ./...`, `go vet ./...`, `go build ./...`, `go mod verify`, `go test -race ./...` en
 verde; integración real contra PostgreSQL 17.11 con el aislamiento, la auditoría, el conflicto de
-creación duplicada, el rollback de `000004`, `000003` y `000005`, la revocación de `TRUNCATE`, la
-propiedad de los objetos y de las funciones, el fallo cerrado del bootstrap ante una pertenencia
-transitiva y la migración con un rol no superusuario. Toolchain fijada en Go 1.27.4.
+creación duplicada, el rollback de `000004`, `000003` y `000005`, el archivado de la auditoría en las
+reversiones, la revocación de `TRUNCATE`, la propiedad de los objetos y de las funciones, el fallo
+cerrado del bootstrap ante una pertenencia transitiva y la migración con un rol no superusuario.
+Toolchain fijada en Go 1.27.4.
 
 Pendiente: la prueba contra el tenant Auth0 real, el rate limiting por IP o subject, la decisión sobre
 roles de PostgreSQL por tenant para eliminar la falsificación de `app.current_subject` y la
