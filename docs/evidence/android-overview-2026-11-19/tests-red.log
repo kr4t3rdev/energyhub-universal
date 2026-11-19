@@ -1,0 +1,7 @@
+RED observado (2026-11-19): solo el test nuevo existia, sin implementacion.
+Gradle :app:testDebugUnitTest -> :app:compileDebugUnitTestKotlin FAILED
+e: SitePresentationTest.kt: Unresolved reference 'exampleSite'.
+e: SitePresentationTest.kt: Unresolved reference 'formatReading'.
+e: SitePresentationTest.kt: Unresolved reference 'deviceStatusLabel'.
+e: SitePresentationTest.kt: Unresolved reference 'hasDevices'.
+BUILD FAILED in 12s
