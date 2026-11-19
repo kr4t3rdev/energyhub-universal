@@ -192,26 +192,43 @@ func TestIntegrationAdminFunctionsAreOwnedByTheOwnerRole(t *testing.T) {
 	}
 
 	rows, err := privilegedPool.Query(ctx, `
-		SELECT function.oid::regprocedure::text
+		SELECT function.oid::regprocedure::text, owner.rolname
 		  FROM pg_proc AS function
 		  JOIN pg_namespace AS schema ON schema.oid = function.pronamespace
 		  JOIN pg_roles AS owner ON owner.oid = function.proowner
 		 WHERE schema.nspname = 'app'
-		   AND function.proname IN ('create_organization', 'grant_membership', 'revoke_membership')
-		   AND owner.rolname <> $1`, integrationOwnerRole)
+		   AND function.proname IN ('create_organization', 'grant_membership', 'revoke_membership')`)
 	if err != nil {
 		t.Fatalf("read the function owners: %v", err)
 	}
 	defer rows.Close()
+	found := map[string]string{}
 	for rows.Next() {
-		var function string
-		if err := rows.Scan(&function); err != nil {
+		var function, owner string
+		if err := rows.Scan(&function, &owner); err != nil {
 			t.Fatalf("scan the function owner: %v", err)
 		}
-		t.Fatalf("function %s is not owned by %s", function, integrationOwnerRole)
+		found[function] = owner
 	}
 	if err := rows.Err(); err != nil {
 		t.Fatalf("read the function owners: %v", err)
+	}
+
+	// The three administrative functions have to exist. Without this check the
+	// test would pass when the functions were missing, which is the opposite of
+	// what it is meant to prove.
+	for _, function := range []string{
+		"app.create_organization(text,text)",
+		"app.grant_membership(text,text,text)",
+		"app.revoke_membership(text,text)",
+	} {
+		owner, ok := found[function]
+		if !ok {
+			t.Fatalf("the administrative function %s does not exist", function)
+		}
+		if owner != integrationOwnerRole {
+			t.Fatalf("function %s is owned by %s, want %s", function, owner, integrationOwnerRole)
+		}
 	}
 }
 
