@@ -169,11 +169,12 @@ Seguimiento del diseño anterior, con dos commits adicionales:
     de modo que el aislamiento y la frontera administrativa se comprueban en cada ejecución y no solo en
     la máquina del desarrollador.
   - La reversión de `000003` archivaba mal la evidencia: eliminaba la traza de auditoría sin archivarla
-    cuando se usaba sin la reversión de `000004`. Ahora archiva en
-    `public.admin_audit_log_archive_000003` antes de eliminar el esquema `app`, y el `.down.sql` deja al
+    cuando se usaba sin la reversión de `000004`. En esta ronda archivaba en
+    `public.admin_audit_log_archive_000003` antes de eliminar el esquema `app`, y el `.down.sql` dejaba al
     rol runtime con lectura. La corrección no toca el `.up.sql` de `000003`: los `.down.sql` son
     referencias manuales y no se ejecutan automáticamente, así que no cambian el estado de ninguna base
-    ya aplicada.
+    ya aplicada. Este enfoque quedó superado el 2026-11-19: las reversiones son fail-closed y no archivan
+    nada (ver más abajo).
 
 Verificado: `go test ./...`, `go vet ./...`, `go build ./...`, `go mod verify`, `go test -race ./...` en
 verde; integración real contra PostgreSQL 17.11 con el aislamiento, la auditoría, el conflicto de
@@ -185,3 +186,55 @@ Toolchain fijada en Go 1.27.4.
 Pendiente: la prueba contra el tenant Auth0 real, el rate limiting por IP o subject, la decisión sobre
 roles de PostgreSQL por tenant para eliminar la falsificación de `app.current_subject` y la
 actualización del plan de Notion.
+
+## Estado de implementación (2026-11-19)
+
+Ronda de revisión de seguridad que cerró los hallazgos del informe de seguridad (veredicto previo:
+DO NOT SHIP):
+
+- **Bypass de la comprobación del rol runtime** (alto). El verificador comparaba `current_user` con el
+  rol runtime esperado, pero `current_user` puede cambiarse con `SET ROLE` o con una opción de arranque
+  (`options=-c role=...`): una sesión autenticada como superusuario podía pasar la comprobación fingiendo
+  ser el rol de solo lectura y recuperar después sus privilegios. El verificador ahora se apoya en
+  `session_user` (la identidad que PostgreSQL autenticó), exige `session_user = current_user` y rechaza
+  que el rol pueda asumir un rol privilegiado (`energyhub_owner`, `energyhub_admin`,
+  `energyhub_membership_admin`, `energyhub_admin_capability`) o un rol con `BYPASSRLS`, recorriendo todo
+  el grafo de pertenencias, de modo que una pertenencia con `INHERIT FALSE, SET TRUE` tampoco sirve para
+  eludirla. Cubierto por dos pruebas de integración reales (`def2f58`).
+
+- **Higiene de credenciales del stack local** (medio). `dev-stack.sh` exportaba las contraseñas de base de
+  datos al proceso global y el API heredaba `DATABASE_URL` y `ADMIN_DATABASE_URL`; además, el script
+  imprimía los DSN con contraseña en la salida estándar, que acaba en logs de terminal, en ficheros
+  redirigidos y en logs de CI. Ahora las contraseñas no se exportan (solo la llamada a `psql` que las
+  necesita las recibe), el API y el emisor heredan un entorno limpio, y el entorno con los DSN se escribe en
+  `.local/dev-stack.env` con modo `0600`; el script solo imprime la ruta (`30e53cc`).
+
+- **Lectura de la traza de auditoría por la credencial administrativa** (medio). `000004` había concedido
+  `SELECT` sobre `app.admin_audit_log` a `energyhub_membership_admin`, así que la credencial administrativa
+  podía leer toda la traza del sistema. La migración nueva `000006_close_admin_audit_read` revoca ese
+  privilegio y el de `energyhub_admin`, revoca `CREATE` sobre el esquema `public` a `PUBLIC` (revocar a los
+  roles de la aplicación no anula la concesión a `PUBLIC`) y `USAGE` sobre el esquema `app` a `PUBLIC`. El
+  bootstrap hace lo mismo y comprueba que ningún rol de la aplicación puede crear objetos en `public`
+  (`54883be`).
+
+- **Reversiones que reabrían la frontera** (medio). Los `.down.sql` de `000003` y `000004` restauraban las
+  políticas de escritura falsificables (`app.is_system_admin`), devolvían al grupo administrativo la lectura
+  de las tablas de todos los tenants y eliminaban la traza de auditoría. Ahora todas las reversiones son
+  forward-only: verifican que el estado endurecido sigue en pie y fallan cerrado cuando no lo está. El
+  archivado de la auditoría desaparece con ello, porque sobrescribir un archivo de archivo previo destruía
+  la evidencia de un periodo anterior (`54883be`).
+
+- `000006` es una migración nueva y no una edición de `000004`: una migración ya aplicada no se edita. Los
+  `.down.sql` son referencias manuales que nunca se ejecutan automáticamente, así que corregirlos no cambia
+  el estado de ninguna base ya aplicada.
+
+Verificado: `go test ./...`, `go build ./...`, `gofmt` sin diferencias y la integración real contra
+PostgreSQL 17.11 en verde, incluida la reversión fail-closed de las cuatro migraciones, la denegación de
+lectura de la auditoría a la credencial administrativa y la denegación de escritura directa al rol runtime.
+Comprobado además que el stack local no filtra contraseñas por la salida estándar ni por la lista de
+procesos.
+
+Pendiente: reejecutar la revisión de código y la de seguridad sobre el rango completo antes de publicar,
+la prueba contra el tenant Auth0 real, el rate limiting por IP o subject, la decisión sobre roles de
+PostgreSQL por tenant para eliminar la falsificación de `app.current_subject` y la actualización del plan de
+Notion.

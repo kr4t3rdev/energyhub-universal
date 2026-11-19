@@ -41,6 +41,12 @@ Ejecutar como un único job de despliegue: no hay coordinación entre runners co
 - La propiedad de las funciones administrativas se vuelve a afirmar sobre `energyhub_owner`, con una comprobación posterior. `CREATE OR REPLACE` conserva el propietario anterior, así que sin esta afirmación una restauración de la base podía dejar las funciones en manos del rol que las instaló, que podría reemplazar su cuerpo y quitarse la comprobación de capacidad.
 - `000005` es una migración nueva y no una edición de `000004`, porque una migración ya aplicada no se edita.
 
+`000006_close_admin_audit_read` cierra el último privilege del grupo administrativo:
+
+- `000004` concedió `SELECT` sobre `app.admin_audit_log` a `energyhub_membership_admin`, así que la credencial administrativa podía leer toda la traza de auditoría: los actores, las organizaciones, los sujetos y los roles de todo el sistema. `000006` revoca ese `SELECT` y el de `energyhub_admin`. La credencial administrativa escribe a través de las funciones; no necesita leer la auditoría. La traza se consulta con la credencial privilegiada del despliegue.
+- `000004` y `000005` revocaban `CREATE` sobre el esquema `public` a los roles de la aplicación, pero revocar a un rol no anula una concesión a `PUBLIC`. Un cluster restaurado desde un volcado antiguo puede conservar esa concesión, y un rol de la aplicación podría entonces crear objetos sombra junto a los protegidos. `000006` revoca `CREATE` de `PUBLIC` explícitamente y el bootstrap hace lo mismo.
+- `000006` revoca además `USAGE` sobre el esquema `app` a `PUBLIC`, de modo que el esquema administrativo solo es alcanzable por los roles que lo necesitan.
+
 Antes de aplicar las migraciones hay que crear y normalizar los roles del cluster (una vez, con un superusuario y contra la base de datos de la aplicación):
 
 ```sh
@@ -69,12 +75,18 @@ Las escrituras pasan por `app.create_organization`, `app.grant_membership` y `ap
 
 Las migraciones se aplican con un rol que pueda cambiar la propiedad de los objetos a `energyhub_owner`: un superusuario o un rol con esa pertenencia. Ese rol hereda `BYPASSRLS` y los privilegios de escritura, así que es una credencial privilegiada del job de despliegue: nunca debe ser la `DATABASE_URL` de la API.
 
-El `.down.sql` de `000004` devuelve el estado de `000003` y el de `000003` devuelve el de `000002`, incluida la frontera más débil basada en `app.is_system_admin`. Son reversiones manuales: se ejecutan con una conexión privilegiada y solo para volver a un estado anterior en un entorno controlado.
+## Reversiones
 
-Los `.down.sql` no se ejecutan automáticamente, así que corregirlos no cambia el estado de ninguna base ya aplicada: la regla de no editar una migración aplicada protege el archivo `.up.sql`, que es el que determina el estado de la base. Por eso el `.down.sql` de `000003` se corrigió el 2026-11-18 sin tocar su `.up.sql`:
+Las migraciones son forward-only y las reversiones también. Un `.down.sql` **no** devuelve la base a un estado anterior: verifica que el estado endurecido sigue en pie y falla cerrado cuando no lo está.
 
-- Revocaba `EXECUTE` sobre funciones que el propio archivo acababa de eliminar, así que la reversión fallaba.
-- Revocaba el `SELECT` del rol runtime, que el bootstrap había concedido, y dejaba la API sin poder leer.
-- Ahora archiva la traza de auditoría en `public.admin_audit_log_archive_000003` antes de eliminar el esquema `app`, porque una reversión no puede borrar la evidencia de quién cambió las membresías. La reversión de `000004` hace lo mismo con `public.admin_audit_log_archive_000004`.
+La razón es que el estado anterior de cada una de estas migraciones es una frontera más débil: `000003` devolvía las políticas de escritura based en `app.is_system_admin`, que cualquier rol puede activar, y devolvía al grupo administrativo la lectura de las tablas de todos los tenants; `000004` eliminaba la traza de auditoría; `000006` devolvía la lectura de la auditoría completa. Una reversión durante un incidente es exactamente el momento en que una frontera más débil pasa inadvertida y hace más daño.
 
-Ambas reversiones están cubiertas por pruebas de integración reales (`TestIntegrationDownMigrationsExecute` y `TestIntegrationAdminWriteRollbackArchivesTheAuditTrail`).
+Consecuencias:
+
+- Ninguna reversión restaura las políticas falsificables, devuelve el `SELECT` de las tablas de tenants al grupo administrativo, ni elimina o archiva la traza de auditoría.
+- Ninguna reversión necesita sobrescribir un archivo de archivo previo, así que dos ciclos de reversión no destruyen la evidencia de un periodo anterior.
+- Volver a un estado anterior no es una operación de migración: es restaurar una copia de seguridad, y esa es una decisión explícita del operador.
+
+Los `.down.sql` no se ejecutan automáticamente, así que corregirlos nunca cambia el estado de una base ya aplicada. La regla de no editar una migración aplicada protege el archivo `.up.sql`, que es el que determina el estado de la base; los `.down.sql` son referencias manuales revisadas.
+
+Las reversiones están cubiertas por pruebas de integración reales (`TestIntegrationDownMigrationsExecute`, `TestIntegrationAdminWriteRollbackKeepsTheAuditTrail` y `TestIntegrationMigrationsAreForwardOnly`).

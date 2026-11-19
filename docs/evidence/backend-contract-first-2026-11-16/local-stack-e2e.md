@@ -1,6 +1,6 @@
 # Evidencia — Stack local y flujo de extremo a extremo
 
-Fecha: 2026-11-17 (actualizado 2026-11-18). PostgreSQL 17.11 (Homebrew), emisor OIDC de desarrollo, API local.
+Fecha: 2026-11-17 (actualizado 2026-11-19). PostgreSQL 17.11 (Homebrew), emisor OIDC de desarrollo, API local.
 
 ## Qué se probó
 
@@ -23,9 +23,9 @@ cd backend
 PGPORT=55432 PGUSER=postgres bash scripts/dev-stack.sh
 ```
 
-El script crea los roles, aplica las migraciones, arranca el emisor local e
-imprime las variables de entorno para la API. La API del stack local escucha en
-`127.0.0.1:8080` y no recibe la credencial administrativa.
+El script crea los roles, aplica las migraciones, arranca el emisor local y
+escribe el entorno de la API en `.local/dev-stack.env` con modo `0600`. La API del
+stack local escucha en `127.0.0.1:8080` y no recibe la credencial administrativa.
 
 ## Resultados observados
 
@@ -73,6 +73,7 @@ Frontera administrativa, con la credencial `energyhub_admin`:
 | `SELECT` sobre `organizations` | `permission denied` |
 | `INSERT` sobre `organization_memberships` | `permission denied` |
 | `SELECT app.create_organization(...)` | `permission denied` sin el rol de capacidad |
+| `SELECT` sobre `app.admin_audit_log` | `permission denied` (la auditoría se lee con la credencial privilegiada del despliegue) |
 
 La traza de auditoría registra el actor, la operación y el objetivo de cada
 escritura administrativa.
@@ -105,15 +106,22 @@ Arranque de la API:
   se rechaza como migrador, tanto por el userinfo de la URL como por el rol
   effective de la sesión.
 - `internal/storage/postgres`: prueba de integración real sobre el aislamiento y
-  la frontera administrativa, la auditoría, el conflicto de creación duplicada, el
-  rollback de `000004` y `000003` (con el archivo de auditoría archivado en vez de
-  borrado), el rollback de `000005`, la revocación de `TRUNCATE`, la propiedad de
+  la frontera administrativa, la auditoría, el conflicto de creación duplicada, las
+  reversiones fail-closed de `000003`, `000004`, `000005` y `000006` (que no reabren
+  la frontera ni borran la evidencia), la revocación de `TRUNCATE`, el cierre de la
+  lectura de la auditoría y del `CREATE` en `public`, la propiedad de
   los objetos y de las funciones administrativas en `energyhub_owner`, el fallo
   cerrado del bootstrap ante una pertenencia transitiva o una credencial
   administrativa compartida, y la migración ejecutada por un rol no superusuario.
   La suite también libera los privilegios del rol temporal antes de eliminarlo:
   después de la ejecución, `pg_roles` y `pg_database` no muestran ningún rol ni
   base `energyhub_it_%`.
+- `internal/storage/postgres` (bypass del rol runtime): la comprobación de la
+  credencial de la API se hace sobre `session_user` y exige `session_user =
+  current_user`, y rechaza que el rol pueda asumir un rol privilegiado a través de
+  toda la cadena de pertenencias. Cubierto por
+  `TestIntegrationRuntimeRoleVerifierRejectsMasqueradingSession` y
+  `TestIntegrationRuntimeRoleVerifierRejectsSetOnlyOwnerMembership`.
 - `internal/storage/postgres` (redaction): la contraseña del DSN no aparece en los
   errores de conexión de `cmd/api`, `cmd/membership` ni `cmd/migrate`, que la
   quitan antes de mostrarlos.
@@ -125,6 +133,10 @@ Higiene de credenciales en el proceso:
 | DSN del runtime en la lista de procesos | no aparece (`ps -Ao args` no lo encuentra) |
 | `ADMIN_DATABASE_URL` en el entorno del proceso API | no está |
 | `MIGRATION_DATABASE_URL` en el entorno del proceso API | no está |
+| `DATABASE_URL` heredado en el entorno del proceso API | no está (solo el DSN runtime exportado por el script) |
+| `RUNTIME_PW` o `ADMIN_PW` en el entorno del proceso API | no está |
+| Credenciales de base de datos en la salida estándar del script | no aparecen (el entorno se escribe en `.local/dev-stack.env`, modo `0600`) |
+| DSN del emisor de desarrollo | no aparece en la lista de procesos |
 
 La suite de integración corre también en CI: el job de backend levanta un
 PostgreSQL 17 como servicio y ejecuta `TestIntegration`, así que el aislamiento y
@@ -139,8 +151,10 @@ la frontera administrativa se comprueban en cada ejecución.
 - La administración es por CLI, no por HTTP: no existe todavía una superficie HTTP
   que conceda membresías.
 - Las credenciales del stack local son de desarrollo y no sirven fuera del entorno
-  local. El script las imprime en la salida estándar, así que esa salida no debe
-  copiarse a un registro compartido.
+  local. El script las deja en `.local/dev-stack.env` (modo `0600`) y no las
+  imprime, así que la salida del script se puede compartir sin filtrar
+  credenciales; el fichero de entorno es lo que no debe copiarse a un registro
+  compartido.
 - `app.current_subject` es un GUC de sesión falsificable: quien tenga la credencial
   runtime puede fijar un subject arbitrario. La credencial de base de datos es la
   frontera de confianza de la lectura y la limitación está fijada por la prueba
