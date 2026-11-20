@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/google/uuid"
+
 	"energyhub-universal/backend/internal/authz"
 	"energyhub-universal/backend/internal/contracts"
 	"energyhub-universal/backend/internal/site"
@@ -11,31 +13,23 @@ import (
 
 const (
 	listSitesQuery = `
-SELECT s.id, s.name, s.timezone
+SELECT s.id, s.name, s.timezone, s.organization_id
 FROM public.sites AS s
-WHERE s.organization_id = $1
 ORDER BY s.name, s.id`
 
-	// The site id is compared as text so a malformed id matches nothing
-	// instead of failing the query with a UUID cast error. The caller maps
-	// the empty result to ErrSiteNotFound.
-	getSiteQuery = `
-SELECT s.id, s.name, s.timezone
-FROM public.sites AS s
-WHERE s.organization_id = $1 AND s.id::text = $2`
+	getSiteQuery = listSitesQuery
 
 	listSiteDevicesQuery = `
-SELECT d.id, d.name, d.kind, d.status
+SELECT d.id, d.name, d.kind, d.status, d.site_id
 FROM public.site_devices AS d
-WHERE d.site_id::text = $1
 ORDER BY d.name, d.id`
 )
 
 // SiteReader reads sites and devices from PostgreSQL. Every read runs in a
-// transaction that sets app.current_subject so RLS can enforce the same
-// subject even if a future query forgets the WHERE clause. The subject is
-// the verified subject the service received in its scope, never a value the
-// client chose.
+// transaction that sets app.current_subject to the verified subject so RLS
+// policies enforce the same subject even if a future query forgets the WHERE
+// clause. The subject is the verified subject the service received in its
+// scope, never a value the client chose.
 type SiteReader struct {
 	db DB
 }
@@ -50,7 +44,7 @@ func (r *SiteReader) ListSites(ctx context.Context, subject, organizationID stri
 		return nil, err
 	}
 
-	tx, err := r.beginScoped(ctx, subject)
+	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +55,13 @@ func (r *SiteReader) ListSites(ctx context.Context, subject, organizationID stri
 		}
 	}()
 
-	rows, err := tx.Query(ctx, listSitesQuery, organizationID)
+	// Set the tenant context so RLS policies filter rows by subject.
+	if err := tx.Exec(ctx, setMembershipSubjectQuery, subject); err != nil {
+		_ = tx.Rollback(ctx)
+		return nil, err
+	}
+
+	rows, err := tx.Query(ctx, listSitesQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +69,13 @@ func (r *SiteReader) ListSites(ctx context.Context, subject, organizationID stri
 	if err != nil {
 		return nil, err
 	}
+	filtered := make([]contracts.SiteSummary, 0)
+	for _, s := range sites {
+		if s.OrganizationID == organizationID {
+			filtered = append(filtered, s)
+		}
+	}
+	sites = filtered
 
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
@@ -83,7 +90,7 @@ func (r *SiteReader) GetOverview(ctx context.Context, subject, organizationID, s
 		return contracts.SiteOverview{}, err
 	}
 
-	tx, err := r.beginScoped(ctx, subject)
+	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return contracts.SiteOverview{}, err
 	}
@@ -93,6 +100,12 @@ func (r *SiteReader) GetOverview(ctx context.Context, subject, organizationID, s
 			_ = tx.Rollback(ctx)
 		}
 	}()
+
+	// Set the tenant context so RLS policies filter rows by subject.
+	if err := tx.Exec(ctx, setMembershipSubjectQuery, subject); err != nil {
+		_ = tx.Rollback(ctx)
+		return contracts.SiteOverview{}, err
+	}
 
 	summary, err := r.readSite(ctx, tx, organizationID, siteID)
 	if err != nil {
@@ -123,7 +136,7 @@ func (r *SiteReader) ListDevices(ctx context.Context, subject, organizationID, s
 		return nil, err
 	}
 
-	tx, err := r.beginScoped(ctx, subject)
+	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -133,6 +146,12 @@ func (r *SiteReader) ListDevices(ctx context.Context, subject, organizationID, s
 			_ = tx.Rollback(ctx)
 		}
 	}()
+
+	// Set the tenant context so RLS policies filter rows by subject.
+	if err := tx.Exec(ctx, setMembershipSubjectQuery, subject); err != nil {
+		_ = tx.Rollback(ctx)
+		return nil, err
+	}
 
 	if _, err := r.readSite(ctx, tx, organizationID, siteID); err != nil {
 		return nil, err
@@ -153,7 +172,10 @@ func (r *SiteReader) ListDevices(ctx context.Context, subject, organizationID, s
 // visible to the subject. Any other case is ErrSiteNotFound: the reader
 // never reveals whether the site exists elsewhere.
 func (r *SiteReader) readSite(ctx context.Context, tx Tx, organizationID, siteID string) (contracts.SiteSummary, error) {
-	rows, err := tx.Query(ctx, getSiteQuery, organizationID, siteID)
+	if _, err := uuid.Parse(siteID); err != nil {
+		return contracts.SiteSummary{}, site.ErrSiteNotFound
+	}
+	rows, err := tx.Query(ctx, getSiteQuery)
 	if err != nil {
 		return contracts.SiteSummary{}, err
 	}
@@ -161,18 +183,33 @@ func (r *SiteReader) readSite(ctx context.Context, tx Tx, organizationID, siteID
 	if err != nil {
 		return contracts.SiteSummary{}, err
 	}
-	if len(sites) == 0 {
-		return contracts.SiteSummary{}, site.ErrSiteNotFound
+	for _, s := range sites {
+		if s.ID == siteID && s.OrganizationID == organizationID {
+			return s, nil
+		}
 	}
-	return sites[0], nil
+	return contracts.SiteSummary{}, site.ErrSiteNotFound
 }
 
 func (r *SiteReader) readDevices(ctx context.Context, tx Tx, siteID string) ([]contracts.DeviceSummary, error) {
-	rows, err := tx.Query(ctx, listSiteDevicesQuery, siteID)
+	if _, err := uuid.Parse(siteID); err != nil {
+		return nil, site.ErrSiteNotFound
+	}
+	rows, err := tx.Query(ctx, listSiteDevicesQuery)
 	if err != nil {
 		return nil, err
 	}
-	return scanDevices(rows)
+	devices, err := scanDevices(rows)
+	if err != nil {
+		return nil, err
+	}
+	filtered := make([]contracts.DeviceSummary, 0)
+	for _, d := range devices {
+		if d.SiteID == siteID {
+			filtered = append(filtered, d)
+		}
+	}
+	return filtered, nil
 }
 
 func scanSites(rows Rows) ([]contracts.SiteSummary, error) {
@@ -180,7 +217,7 @@ func scanSites(rows Rows) ([]contracts.SiteSummary, error) {
 	sites := make([]contracts.SiteSummary, 0)
 	for rows.Next() {
 		var summary contracts.SiteSummary
-		if err := rows.Scan(&summary.ID, &summary.Name, &summary.Timezone); err != nil {
+		if err := rows.Scan(&summary.ID, &summary.Name, &summary.Timezone, &summary.OrganizationID); err != nil {
 			return nil, err
 		}
 		sites = append(sites, summary)
@@ -198,7 +235,7 @@ func scanDevices(rows Rows) ([]contracts.DeviceSummary, error) {
 	devices := make([]contracts.DeviceSummary, 0)
 	for rows.Next() {
 		var device contracts.DeviceSummary
-		if err := rows.Scan(&device.ID, &device.Name, &device.Kind, &device.Status); err != nil {
+		if err := rows.Scan(&device.ID, &device.Name, &device.Kind, &device.Status, &device.SiteID); err != nil {
 			return nil, err
 		}
 		devices = append(devices, device)
@@ -209,18 +246,6 @@ func scanDevices(rows Rows) ([]contracts.DeviceSummary, error) {
 		return nil, rowsErr
 	}
 	return devices, nil
-}
-
-func (r *SiteReader) beginScoped(ctx context.Context, subject string) (Tx, error) {
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if err := tx.Exec(ctx, setMembershipSubjectQuery, subject); err != nil {
-		_ = tx.Rollback(ctx)
-		return nil, err
-	}
-	return tx, nil
 }
 
 func (r *SiteReader) validate(subject, organizationID string) (string, string, error) {

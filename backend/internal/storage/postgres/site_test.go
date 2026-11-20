@@ -130,7 +130,7 @@ func siteRows(cells ...[]any) *fakeSiteRows {
 func TestSiteReaderListsSitesForVerifiedSubject(t *testing.T) {
 	tx := &fakeSiteTx{queries: []fakeSiteQuery{
 		{rows: siteRows(
-			[]any{"11111111-1111-4111-8111-111111111111", "Casa de ejemplo", "Europe/Madrid"},
+			[]any{"11111111-1111-4111-8111-111111111111", "Casa de ejemplo", "Europe/Madrid", "org-1"},
 		)},
 	}}
 	db := &fakeSiteDB{tx: tx}
@@ -143,13 +143,13 @@ func TestSiteReaderListsSitesForVerifiedSubject(t *testing.T) {
 		t.Fatalf("sites = %#v, want the single site", sites)
 	}
 	if len(tx.execCalls) != 1 || tx.execCalls[0] != setMembershipSubjectQuery {
-		t.Fatalf("exec calls = %#v, want only the subject setting", tx.execCalls)
+		t.Fatalf("exec calls = %#v, want the subject setting", tx.execCalls)
 	}
 	if len(tx.execArgs[0]) != 1 || tx.execArgs[0][0] != "dev|user-1" {
 		t.Fatalf("subject arg = %#v, want the trimmed subject", tx.execArgs[0])
 	}
-	if len(tx.queryArgs[0]) != 1 || tx.queryArgs[0][0] != "org-1" {
-		t.Fatalf("query args = %#v, want the trimmed organization", tx.queryArgs[0])
+	if len(tx.queryArgs[0]) != 0 {
+		t.Fatalf("query args = %#v, want empty", tx.queryArgs[0])
 	}
 	if !tx.commitCalled || tx.rollbackCalled {
 		t.Fatal("transaction was not committed cleanly")
@@ -209,10 +209,10 @@ func TestSiteReaderRollsBackOnQueryError(t *testing.T) {
 
 func TestSiteReaderOverviewReturnsSiteDevicesAndNoReadings(t *testing.T) {
 	tx := &fakeSiteTx{queries: []fakeSiteQuery{
-		{rows: siteRows([]any{"11111111-1111-4111-8111-111111111111", "Casa de ejemplo", "Europe/Madrid"})},
+		{rows: siteRows([]any{"11111111-1111-4111-8111-111111111111", "Casa de ejemplo", "Europe/Madrid", "org-1"})},
 		{rows: siteRows(
-			[]any{"22222222-2222-4222-8222-222222222222", "Inversor solar", "inversor", "En línea"},
-			[]any{"33333333-3333-4333-8333-333333333333", "Batería doméstica", "batería", nil},
+			[]any{"22222222-2222-4222-8222-222222222222", "Inversor solar", "inversor", "En línea", "11111111-1111-4111-8111-111111111111"},
+			[]any{"33333333-3333-4333-8333-333333333333", "Batería doméstica", "batería", nil, "11111111-1111-4111-8111-111111111111"},
 		)},
 	}}
 	db := &fakeSiteDB{tx: tx}
@@ -272,8 +272,8 @@ func TestSiteReaderOverviewTreatsMalformedSiteIDAsNotFound(t *testing.T) {
 
 func TestSiteReaderListDevicesChecksSiteVisibilityFirst(t *testing.T) {
 	tx := &fakeSiteTx{queries: []fakeSiteQuery{
-		{rows: siteRows([]any{"11111111-1111-4111-8111-111111111111", "Casa de ejemplo", "Europe/Madrid"})},
-		{rows: siteRows([]any{"22222222-2222-4222-8222-222222222222", "Inversor solar", "inversor", nil})},
+		{rows: siteRows([]any{"11111111-1111-4111-8111-111111111111", "Casa de ejemplo", "Europe/Madrid", "org-1"})},
+		{rows: siteRows([]any{"22222222-2222-4222-8222-222222222222", "Inversor solar", "inversor", nil, "11111111-1111-4111-8111-111111111111"})},
 	}}
 	db := &fakeSiteDB{tx: tx}
 

@@ -170,13 +170,13 @@ func TestIntegrationSiteTenantIsolationAndAdminWrites(t *testing.T) {
 		runtimePool := connect(t, environment.runtimeURL)
 		defer runtimePool.Close()
 
-		_, err := runtimePool.Exec(ctx, "SELECT app.create_site('org-1', '77777777-7777-4777-8777-777777777777', 'Direct', 'Europe/Madrid')")
+		_, err := runtimePool.Exec(ctx, "SELECT app.create_site('00000000-0000-0000-0000-000000000000', '77777777-7777-4777-8777-777777777777', 'Direct', 'Europe/Madrid')")
 		if err == nil {
 			t.Fatal("err = nil, want permission denied")
 		}
 		assertPermissionDenied(t, err)
 
-		_, err = runtimePool.Exec(ctx, "SELECT app.create_site_device('org-1', '11111111-1111-4111-8111-111111111111', '88888888-8888-4888-8888-888888888888', 'Direct', 'meter')")
+		_, err = runtimePool.Exec(ctx, "SELECT app.create_site_device('00000000-0000-0000-0000-000000000001', '11111111-1111-4111-8111-111111111111', '88888888-8888-4888-8888-888888888888', 'Direct', 'meter')")
 		if err == nil {
 			t.Fatal("err = nil, want permission denied")
 		}

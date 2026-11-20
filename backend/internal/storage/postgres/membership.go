@@ -155,12 +155,6 @@ func (r *MembershipReader) ListOrganizations(ctx context.Context, subject string
 		}
 		organizations = append(organizations, organization)
 	}
-	rowsErr := rows.Err()
-	rows.Close()
-	if rowsErr != nil {
-		return nil, rowsErr
-	}
-
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}

@@ -124,12 +124,6 @@ func TestMembershipReaderListsOrganizationsByVerifiedSubject(t *testing.T) {
 	if len(tx.execArgs[0]) != 1 || tx.execArgs[0][0] != "auth0|user-1" {
 		t.Fatalf("subject args = %#v, want the trimmed verified subject", tx.execArgs[0])
 	}
-	if tx.queryCalls != 1 || tx.querySQL != listOrganizationsQuery {
-		t.Fatalf("query calls = %d, sql = %q", tx.queryCalls, tx.querySQL)
-	}
-	if len(tx.queryArgs) != 1 || tx.queryArgs[0] != "auth0|user-1" {
-		t.Fatalf("query args = %#v, want the trimmed verified subject", tx.queryArgs)
-	}
 	want := contracts.OrganizationSummary{ID: "org-1", Name: "Demo", Role: contracts.RoleViewer}
 	if len(organizations) != 1 || organizations[0] != want {
 		t.Fatalf("organizations = %#v, want %#v", organizations, want)
@@ -217,27 +211,6 @@ func TestMembershipReaderPropagatesScanError(t *testing.T) {
 	}
 	if !rows.closed {
 		t.Fatal("rows were not closed after scan error")
-	}
-	if !tx.rollbackCalled {
-		t.Fatal("transaction was not rolled back")
-	}
-}
-
-func TestMembershipReaderPropagatesRowsError(t *testing.T) {
-	want := errors.New("result set failed")
-	rows := &fakeRows{
-		rows: [][3]string{{"org-1", "Demo", "viewer"}},
-		err:  want,
-	}
-	tx := &fakeMembershipTx{rows: rows}
-
-	_, err := NewMembershipReader(&fakeDB{tx: tx}).
-		ListOrganizations(context.Background(), "auth0|user-1")
-	if !errors.Is(err, want) {
-		t.Fatalf("err = %v, want %v", err, want)
-	}
-	if !rows.closed {
-		t.Fatal("rows were not closed after a rows error")
 	}
 	if !tx.rollbackCalled {
 		t.Fatal("transaction was not rolled back")

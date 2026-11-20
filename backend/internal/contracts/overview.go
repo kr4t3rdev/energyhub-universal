@@ -29,9 +29,10 @@ type SiteListResponse struct {
 }
 
 type SiteSummary struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Timezone string `json:"timezone"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Timezone      string `json:"timezone"`
+	OrganizationID string `json:"organization_id,omitempty"`
 }
 
 type SiteOverview struct {
@@ -53,10 +54,11 @@ type DeviceListResponse struct {
 }
 
 type DeviceSummary struct {
-	ID     string  `json:"id"`
-	Name   string  `json:"name"`
-	Kind   string  `json:"kind"`
-	Status *string `json:"status"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Kind     string `json:"kind"`
+	Status   *string `json:"status"`
+	SiteID   string `json:"site_id,omitempty"`
 }
 
 type ErrorResponse struct {
