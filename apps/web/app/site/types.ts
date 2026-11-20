@@ -1,5 +1,7 @@
 export type Freshness = "missing" | "fresh" | "stale";
 
+export type OrganizationRole = "owner" | "admin" | "member" | "viewer";
+
 export interface Reading {
   label: string;
   value: number | null;

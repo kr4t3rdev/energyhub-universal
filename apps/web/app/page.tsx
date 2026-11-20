@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { siteOverviewProvider } from "./site/provider";
 import { deviceStatusLabel, formatReading, freshnessLabel, hasDevices } from "./site/presentation";
+import OrganizationsList from "./site/organizations-list";
 
 async function SiteMeta({ updatedAt }: { updatedAt: string | null }) {
   await connection();
@@ -98,6 +99,10 @@ export default async function Home() {
               <span className="note-bottom">ENERGYHUB UNIVERSAL <span>↗</span></span>
             </aside>
           </div>
+        </section>
+
+        <section className="organizations-section container" id="organizaciones" aria-labelledby="org-title">
+          <OrganizationsList />
         </section>
       </main>
       <footer className="footer container"><span>© EnergyHub Universal</span><span>UNA NUEVA PERSPECTIVA PARA TU ENERGÍA <span aria-hidden="true">✳</span></span><span>PROYECTO EN DESARROLLO</span></footer>

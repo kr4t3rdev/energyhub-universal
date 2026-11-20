@@ -3,6 +3,10 @@ import SwiftUI
 struct ContentView: View {
     let site: SiteOverview
 
+    @State private var organizations: [Organization] = []
+    @State private var isLoadingOrganizations = true
+    @State private var organizationsError: String? = nil
+
     init(site: SiteOverview = exampleSite) {
         self.site = site
     }
@@ -94,11 +98,72 @@ struct ContentView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                // Tu conexión a la API real
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Tus organizaciones")
+                        .font(.title2)
+                        .fontWeight(.bold)
+
+                    if isLoadingOrganizations {
+                        ProgressView("Cargando...")
+                    } else if let error = organizationsError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    } else if organizations.isEmpty {
+                        if isApiConfigured() {
+                            Text("No tienes organizaciones asignadas.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("La API no está configurada. Agrega APIBaseURL al Info.plist y obtén un token de autenticación para ver tus organizaciones reales.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        ForEach(organizations, id: \.id) { org in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(org.name)
+                                    .fontWeight(.semibold)
+                                Text(org.role)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding()
+                            .background(Color.secondary.opacity(0.1))
+                            .cornerRadius(12)
+                        }
+                    }
+                }
+
                 Text("© EnergyHub Universal — PROYECTO EN DESARROLLO")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             .padding()
         }
+        .task {
+            await loadOrganizations()
+        }
+    }
+
+    private func loadOrganizations() async {
+        isLoadingOrganizations = true
+        organizationsError = nil
+
+        do {
+            let token = UserDefaults.standard.string(forKey: "energyhub_token")
+            let provider = OrganizationApiProvider(authToken: token)
+            let orgs = try await provider.getOrganizations()
+            self.organizations = orgs
+        } catch {
+            if let apiError = error as? ApiClientError {
+                self.organizationsError = "\(apiError)"
+            } else {
+                self.organizationsError = error.localizedDescription
+            }
+        }
+
+        isLoadingOrganizations = false
     }
 }
