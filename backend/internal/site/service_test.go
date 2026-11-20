@@ -9,30 +9,36 @@ import (
 )
 
 type fakeReader struct {
+	listSitesSubject       string
 	listSitesOrganizationID string
+	overviewSubject        string
 	overviewOrganizationID  string
 	overviewSiteID          string
+	devicesSubject          string
 	listSitesResult         []contracts.SiteSummary
 	overviewResult          contracts.SiteOverview
 	err                     error
 	calls                   int
 }
 
-func (f *fakeReader) ListSites(_ context.Context, organizationID string) ([]contracts.SiteSummary, error) {
+func (f *fakeReader) ListSites(_ context.Context, subject, organizationID string) ([]contracts.SiteSummary, error) {
 	f.calls++
+	f.listSitesSubject = subject
 	f.listSitesOrganizationID = organizationID
 	return f.listSitesResult, f.err
 }
 
-func (f *fakeReader) GetOverview(_ context.Context, organizationID, siteID string) (contracts.SiteOverview, error) {
+func (f *fakeReader) GetOverview(_ context.Context, subject, organizationID, siteID string) (contracts.SiteOverview, error) {
 	f.calls++
+	f.overviewSubject = subject
 	f.overviewOrganizationID = organizationID
 	f.overviewSiteID = siteID
 	return f.overviewResult, f.err
 }
 
-func (f *fakeReader) ListDevices(_ context.Context, _, _ string) ([]contracts.DeviceSummary, error) {
+func (f *fakeReader) ListDevices(_ context.Context, subject, _, _ string) ([]contracts.DeviceSummary, error) {
 	f.calls++
+	f.devicesSubject = subject
 	return nil, f.err
 }
 
@@ -46,6 +52,9 @@ func TestServiceListSitesRequiresAuthenticatedOrganizationScope(t *testing.T) {
 	response, err := service.ListSites(context.Background(), scope)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if reader.listSitesSubject != scope.Subject {
+		t.Fatalf("subject = %q, want %q", reader.listSitesSubject, scope.Subject)
 	}
 	if reader.listSitesOrganizationID != scope.OrganizationID {
 		t.Fatalf("organizationID = %q, want %q", reader.listSitesOrganizationID, scope.OrganizationID)
@@ -80,6 +89,9 @@ func TestServiceOverviewPassesOrganizationAndSiteScope(t *testing.T) {
 	response, err := service.GetOverview(context.Background(), scope, "site-1")
 	if err != nil {
 		t.Fatal(err)
+	}
+	if reader.overviewSubject != "user-1" {
+		t.Fatalf("subject = %q, want %q", reader.overviewSubject, "user-1")
 	}
 	if reader.overviewOrganizationID != "org-1" || reader.overviewSiteID != "site-1" {
 		t.Fatalf("scope = (%q, %q), want (org-1, site-1)", reader.overviewOrganizationID, reader.overviewSiteID)
@@ -138,5 +150,18 @@ func TestServiceRejectsUnavailableReader(t *testing.T) {
 	_, err := service.ListSites(context.Background(), scope)
 	if !errors.Is(err, ErrReaderUnavailable) {
 		t.Fatalf("err = %v, want ErrReaderUnavailable", err)
+	}
+}
+
+func TestServicePassesVerifiedSubjectToReaderOnListDevices(t *testing.T) {
+	reader := &fakeReader{}
+	service := NewService(reader)
+	scope := Scope{OrganizationID: "org-1", Subject: "user-1"}
+
+	if _, err := service.ListDevices(context.Background(), scope, "site-1"); err != nil {
+		t.Fatal(err)
+	}
+	if reader.devicesSubject != "user-1" {
+		t.Fatalf("subject = %q, want %q", reader.devicesSubject, "user-1")
 	}
 }
