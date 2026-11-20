@@ -1,5 +1,7 @@
 package com.energyhub.universal.site
 
+import com.energyhub.universal.BuildConfig
+
 /**
  * Errores del cliente de API de EnergyHub Universal.
  */
@@ -7,7 +9,7 @@ sealed class ApiClientError : Exception() {
     object BaseUrlNotConfigured : ApiClientError()
     object InvalidResponse : ApiClientError()
     class RequestFailed(val statusCode: Int, val body: String) : ApiClientError()
-    class DecodingFailed(val cause: Throwable) : ApiClientError()
+    class DecodingFailed(val source: Throwable) : ApiClientError()
 }
 
 /**

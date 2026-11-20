@@ -7,7 +7,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.energyhub.universal.site.ApiClientError
 import com.energyhub.universal.site.Organization
 import com.energyhub.universal.site.OrganizationApiProvider
+import com.energyhub.universal.site.deviceStatusLabel
 import com.energyhub.universal.site.exampleSite
 import com.energyhub.universal.site.formatReading
 import com.energyhub.universal.site.hasDevices
@@ -58,7 +61,7 @@ class MainActivity : ComponentActivity() {
                             is ApiClientError.BaseUrlNotConfigured ->
                                 "La API no est\u00e1 configurada. Define API_BASE_URL en build.gradle.kts."
                             is ApiClientError.DecodingFailed ->
-                                "Error al leer la respuesta: ${e.cause?.message ?: e.message}"
+                                "Error al leer la respuesta: ${e.source.message ?: e.message}"
                             else -> e.message ?: "Error desconocido"
                         }
                     } finally {
@@ -115,7 +118,7 @@ class MainActivity : ComponentActivity() {
                         Text("Cargando...", style = MaterialTheme.typography.bodySmall)
                     } else if (error != null) {
                         Text(error!!, style = MaterialTheme.typography.bodySmall.copy(
-                            color = android.graphics.Color.RED,
+                            color = MaterialTheme.colorScheme.error,
                         ))
                     } else if (!isApiConfigured()) {
                         Text(
