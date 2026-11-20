@@ -19,7 +19,7 @@ import (
 	"syscall"
 	"time"
 
-	"energyhub-universal/backend/internal/apiapp"
+	"energyhub-universal/backend/apiapp"
 	"energyhub-universal/backend/internal/authn"
 )
 

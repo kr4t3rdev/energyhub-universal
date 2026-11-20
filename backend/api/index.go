@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	"energyhub-universal/backend/internal/apiapp"
+	"energyhub-universal/backend/apiapp"
 )
 
 var (
