@@ -45,8 +45,9 @@ final class ApiClient {
         guard var components = URLComponents(string: baseUrl) else {
             throw ApiClientError.baseUrlNotConfigured
         }
-        components.path = (components.path ?? "").hasSuffix("/") ?
-            (components.path! + path.dropFirst()) : (components.path! + path)
+        let existingPath = components.path ?? ""
+        components.path = existingPath.hasSuffix("/") ?
+            (existingPath + path.dropFirst()) : (existingPath + path)
 
         guard let url = components.url else {
             throw ApiClientError.baseUrlNotConfigured

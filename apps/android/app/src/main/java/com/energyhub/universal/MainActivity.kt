@@ -13,7 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LauncherEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -35,14 +35,14 @@ class MainActivity : ComponentActivity() {
             val context = this@MainActivity
             MaterialTheme {
                 val site = exampleSite
-                val token by rememberSaveable { mutableStateOf<String?>(null) }
-                var organizations by remember { mutableStateOf<List<Organization>>(emptyList()) }
-                var isLoading by remember { mutableStateOf(true) }
-                var error by remember { mutableStateOf<String?>(null) }
+                val token = rememberSaveable { mutableStateOf<String?>(null) }
+                val organizationsState = remember { mutableStateOf<List<Organization>>(emptyList()) }
+                val isLoadingState = remember { mutableStateOf(true) }
+                val errorState = remember { mutableStateOf<String?>(null) }
 
-                LauncherEffect(Unit) {
-                    isLoading = true
-                    error = null
+                LaunchedEffect(Unit) {
+                    isLoadingState.value = true
+                    errorState.value = null
                     try {
                         val prefs: SharedPreferences = context.getSharedPreferences(
                             "energyhub_prefs",
@@ -51,9 +51,9 @@ class MainActivity : ComponentActivity() {
                         val storedToken = prefs.getString("energyhub_token", null)
                         val provider = OrganizationApiProvider(storedToken)
                         val orgs = provider.getOrganizations()
-                        organizations.value = orgs
+                        organizationsState.value = orgs
                     } catch (e: Exception) {
-                        error.value = when (e) {
+                        errorState.value = when (e) {
                             is ApiClientError.RequestFailed -> "Error ${e.statusCode}: ${e.body}"
                             is ApiClientError.BaseUrlNotConfigured ->
                                 "La API no est\u00e1 configurada. Define API_BASE_URL en build.gradle.kts."
@@ -62,9 +62,13 @@ class MainActivity : ComponentActivity() {
                             else -> e.message ?: "Error desconocido"
                         }
                     } finally {
-                        isLoading.value = false
+                        isLoadingState.value = false
                     }
                 }
+
+                val organizations = organizationsState.value
+                val isLoading = isLoadingState.value
+                val error = errorState.value
 
                 Column(
                     modifier = Modifier
@@ -107,10 +111,10 @@ class MainActivity : ComponentActivity() {
 
                     // Tu conexión a la API real
                     Text("Tus organizaciones", style = MaterialTheme.typography.titleMedium)
-                    if (isLoading.value) {
+                    if (isLoading) {
                         Text("Cargando...", style = MaterialTheme.typography.bodySmall)
-                    } else if (error.value != null) {
-                        Text(error.value!!, style = MaterialTheme.typography.bodySmall.copy(
+                    } else if (error != null) {
+                        Text(error!!, style = MaterialTheme.typography.bodySmall.copy(
                             color = android.graphics.Color.RED,
                         ))
                     } else if (!isApiConfigured()) {
@@ -119,10 +123,10 @@ class MainActivity : ComponentActivity() {
                                 "y obt\u00e9n un token de autenticación para ver tus organizaciones reales.",
                             style = MaterialTheme.typography.bodySmall,
                         )
-                    } else if (organizations.value.isEmpty()) {
+                    } else if (organizations.isEmpty()) {
                         Text("No tienes organizaciones asignadas.", style = MaterialTheme.typography.bodySmall)
                     } else {
-                        for (org in organizations.value) {
+                        for (org in organizations) {
                             Text(org.name, style = MaterialTheme.typography.bodyMedium)
                             Text(
                                 org.role,
