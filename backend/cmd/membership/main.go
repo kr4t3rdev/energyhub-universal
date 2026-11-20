@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"log"
@@ -32,6 +33,8 @@ var (
 
 const (
 	actionCreateOrganization = "create-organization"
+	actionCreateSite         = "create-site"
+	actionCreateDevice       = "create-device"
 	actionGrant              = "grant"
 	actionRevoke             = "revoke"
 )
@@ -45,9 +48,12 @@ func main() {
 type adminAction struct {
 	kind           string
 	organizationID string
+	siteID         string
 	subject        string
 	role           contracts.OrganizationRole
 	name           string
+	timezone       string
+	deviceKind     string
 }
 
 type adminConfig struct {
@@ -69,6 +75,27 @@ func parseAction(args []string) (adminAction, error) {
 			kind:           actionCreateOrganization,
 			organizationID: strings.TrimSpace(args[1]),
 			name:           strings.TrimSpace(args[2]),
+		}, nil
+	case actionCreateSite:
+		if len(args) != 4 {
+			return adminAction{}, fmt.Errorf("%w: usage: %s <organization-id> <name> <timezone>", ErrInvalidArguments, actionCreateSite)
+		}
+		return adminAction{
+			kind:           actionCreateSite,
+			organizationID: strings.TrimSpace(args[1]),
+			name:           strings.TrimSpace(args[2]),
+			timezone:       strings.TrimSpace(args[3]),
+		}, nil
+	case actionCreateDevice:
+		if len(args) != 5 {
+			return adminAction{}, fmt.Errorf("%w: usage: %s <organization-id> <site-id> <name> <kind>", ErrInvalidArguments, actionCreateDevice)
+		}
+		return adminAction{
+			kind:           actionCreateDevice,
+			organizationID: strings.TrimSpace(args[1]),
+			siteID:         strings.TrimSpace(args[2]),
+			name:           strings.TrimSpace(args[3]),
+			deviceKind:     strings.TrimSpace(args[4]),
 		}, nil
 	case actionGrant:
 		if len(args) != 4 {
@@ -149,6 +176,34 @@ func run(args []string) error {
 		if err := service.Create(ctx, principal, action.organizationID, action.name); err != nil {
 			return adminError("create organization", err, config.adminDatabaseURL)
 		}
+	case actionCreateSite:
+		service := authz.NewAdminSiteService(
+			config.systemAdminSubject,
+			postgres.NewSiteWriter(db, config.systemAdminSubject),
+		)
+		siteID, err := newUUID()
+		if err != nil {
+			return fmt.Errorf("create site: %w", err)
+		}
+		if err := service.CreateSite(ctx, principal, action.organizationID, siteID, action.name, action.timezone); err != nil {
+			return adminError("create site", err, config.adminDatabaseURL)
+		}
+		log.Printf("%s completed for organization %q with site %q", action.kind, action.organizationID, siteID)
+		return nil
+	case actionCreateDevice:
+		service := authz.NewAdminSiteService(
+			config.systemAdminSubject,
+			postgres.NewSiteWriter(db, config.systemAdminSubject),
+		)
+		deviceID, err := newUUID()
+		if err != nil {
+			return fmt.Errorf("create device: %w", err)
+		}
+		if err := service.CreateDevice(ctx, principal, action.organizationID, action.siteID, deviceID, action.name, action.deviceKind); err != nil {
+			return adminError("create device", err, config.adminDatabaseURL)
+		}
+		log.Printf("%s completed for organization %q with device %q", action.kind, action.organizationID, deviceID)
+		return nil
 	case actionGrant:
 		service := authz.NewAdminMembershipService(
 			config.systemAdminSubject,
@@ -177,4 +232,18 @@ func run(args []string) error {
 // the administrative credential reach the terminal or the log.
 func adminError(operation string, err error, adminDatabaseURL string) error {
 	return fmt.Errorf("%s: %w", operation, postgres.RedactConnectionError(err, adminDatabaseURL))
+}
+
+// newUUID returns a random RFC 4122 version 4 UUID in canonical text form.
+// The standard library has no UUID type in go.mod, so the CLI generates its
+// own ids for the sites and devices it creates.
+func newUUID() (string, error) {
+	var bytes [16]byte
+	if _, err := rand.Read(bytes[:]); err != nil {
+		return "", err
+	}
+	bytes[6] = bytes[6]&0x0f | 0x40
+	bytes[8] = bytes[8]&0x3f | 0x80
+	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
+		bytes[0:4], bytes[4:6], bytes[6:8], bytes[8:10], bytes[10:16]), nil
 }

@@ -15,6 +15,8 @@ var (
 	ErrInvalidOrganizationTarget     = errors.New("organization target is invalid")
 	ErrMembershipWriterUnavailable   = errors.New("membership writer unavailable")
 	ErrOrganizationWriterUnavailable = errors.New("organization writer unavailable")
+	ErrInvalidSiteTarget             = errors.New("site target is invalid")
+	ErrSiteWriterUnavailable         = errors.New("site writer unavailable")
 )
 
 // MembershipWriter is the administrative write port. The adminSubject is the
@@ -155,6 +157,84 @@ func (s *AdminOrganizationService) authorize(principal Principal) error {
 	}
 	if s.writer == nil {
 		return ErrOrganizationWriterUnavailable
+	}
+	return nil
+}
+
+// SiteWriter is the administrative write port for sites and devices.
+type SiteWriter interface {
+	CreateSite(ctx context.Context, adminSubject, organizationID, siteID, name, timezone string) error
+	CreateDevice(ctx context.Context, adminSubject, organizationID, siteID, deviceID, name, kind string) error
+}
+
+// AdminSiteService is the only path allowed to create sites and devices.
+type AdminSiteService struct {
+	admin  *AdminAuthorizer
+	writer SiteWriter
+}
+
+func NewAdminSiteService(adminSubject string, writer SiteWriter) *AdminSiteService {
+	return &AdminSiteService{
+		admin:  NewAdminAuthorizer(adminSubject),
+		writer: writer,
+	}
+}
+
+// CreateSite authorizes the principal before validating or touching storage.
+func (s *AdminSiteService) CreateSite(
+	ctx context.Context,
+	principal Principal,
+	organizationID string,
+	siteID string,
+	name string,
+	timezone string,
+) error {
+	if err := s.authorize(principal); err != nil {
+		return err
+	}
+	organizationID = strings.TrimSpace(organizationID)
+	siteID = strings.TrimSpace(siteID)
+	name = strings.TrimSpace(name)
+	timezone = strings.TrimSpace(timezone)
+	if organizationID == "" || siteID == "" || name == "" || timezone == "" {
+		return ErrInvalidSiteTarget
+	}
+	return s.writer.CreateSite(ctx, strings.TrimSpace(principal.Subject), organizationID, siteID, name, timezone)
+}
+
+// CreateDevice authorizes the principal before validating or touching storage.
+func (s *AdminSiteService) CreateDevice(
+	ctx context.Context,
+	principal Principal,
+	organizationID string,
+	siteID string,
+	deviceID string,
+	name string,
+	kind string,
+) error {
+	if err := s.authorize(principal); err != nil {
+		return err
+	}
+	organizationID = strings.TrimSpace(organizationID)
+	siteID = strings.TrimSpace(siteID)
+	deviceID = strings.TrimSpace(deviceID)
+	name = strings.TrimSpace(name)
+	kind = strings.TrimSpace(kind)
+	if organizationID == "" || siteID == "" || deviceID == "" || name == "" || kind == "" {
+		return ErrInvalidSiteTarget
+	}
+	return s.writer.CreateDevice(ctx, strings.TrimSpace(principal.Subject), organizationID, siteID, deviceID, name, kind)
+}
+
+func (s *AdminSiteService) authorize(principal Principal) error {
+	if s == nil || s.admin == nil {
+		return ErrAdminNotConfigured
+	}
+	if err := s.admin.Authorize(principal); err != nil {
+		return err
+	}
+	if s.writer == nil {
+		return ErrSiteWriterUnavailable
 	}
 	return nil
 }

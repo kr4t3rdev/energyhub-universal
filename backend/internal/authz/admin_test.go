@@ -347,3 +347,168 @@ func TestAdminMembershipServiceAcceptsEveryContractRole(t *testing.T) {
 		}
 	}
 }
+
+type fakeSiteWriter struct {
+	createSiteCalls   int
+	createDeviceCalls int
+	admin             string
+	org               string
+	siteID            string
+	deviceID          string
+	name              string
+	timezone          string
+	kind              string
+	err               error
+}
+
+func (f *fakeSiteWriter) CreateSite(_ context.Context, adminSubject, organizationID, siteID, name, timezone string) error {
+	f.createSiteCalls++
+	f.admin = adminSubject
+	f.org = organizationID
+	f.siteID = siteID
+	f.name = name
+	f.timezone = timezone
+	return f.err
+}
+
+func (f *fakeSiteWriter) CreateDevice(_ context.Context, adminSubject, organizationID, siteID, deviceID, name, kind string) error {
+	f.createDeviceCalls++
+	f.admin = adminSubject
+	f.org = organizationID
+	f.siteID = siteID
+	f.deviceID = deviceID
+	f.name = name
+	f.kind = kind
+	return f.err
+}
+
+func TestAdminSiteServiceCreatesSiteAsConfiguredAdmin(t *testing.T) {
+	writer := &fakeSiteWriter{}
+	service := NewAdminSiteService("auth0|admin", writer)
+
+	err := service.CreateSite(context.Background(), Principal{Subject: " auth0|admin "}, " org-1 ", " site-1 ", " HQ ", " Europe/Madrid ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if writer.createSiteCalls != 1 {
+		t.Fatalf("create site calls = %d, want 1", writer.createSiteCalls)
+	}
+	if writer.admin != "auth0|admin" || writer.org != "org-1" || writer.siteID != "site-1" || writer.name != "HQ" || writer.timezone != "Europe/Madrid" {
+		t.Fatalf("writer call = %#v", writer)
+	}
+}
+
+func TestAdminSiteServiceCreatesDeviceAsConfiguredAdmin(t *testing.T) {
+	writer := &fakeSiteWriter{}
+	service := NewAdminSiteService("auth0|admin", writer)
+
+	err := service.CreateDevice(context.Background(), Principal{Subject: " auth0|admin "}, " org-1 ", " site-1 ", " device-1 ", " Main Meter ", " meter ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if writer.createDeviceCalls != 1 {
+		t.Fatalf("create device calls = %d, want 1", writer.createDeviceCalls)
+	}
+	if writer.admin != "auth0|admin" || writer.org != "org-1" || writer.siteID != "site-1" || writer.deviceID != "device-1" || writer.name != "Main Meter" || writer.kind != "meter" {
+		t.Fatalf("writer call = %#v", writer)
+	}
+}
+
+func TestAdminSiteServiceRejectsNonAdminBeforeWriter(t *testing.T) {
+	writer := &fakeSiteWriter{}
+	service := NewAdminSiteService("auth0|admin", writer)
+
+	if err := service.CreateSite(context.Background(), Principal{Subject: "auth0|other"}, "org-1", "site-1", "HQ", "Europe/Madrid"); !errors.Is(err, ErrAdminForbidden) {
+		t.Fatalf("site err = %v, want ErrAdminForbidden", err)
+	}
+	if err := service.CreateDevice(context.Background(), Principal{Subject: "auth0|other"}, "org-1", "site-1", "device-1", "Meter", "meter"); !errors.Is(err, ErrAdminForbidden) {
+		t.Fatalf("device err = %v, want ErrAdminForbidden", err)
+	}
+	if writer.createSiteCalls != 0 || writer.createDeviceCalls != 0 {
+		t.Fatalf("writer calls = %d/%d, want 0/0", writer.createSiteCalls, writer.createDeviceCalls)
+	}
+}
+
+func TestAdminSiteServiceRejectsInvalidTargetBeforeWriter(t *testing.T) {
+	writer := &fakeSiteWriter{}
+	service := NewAdminSiteService("auth0|admin", writer)
+	principal := Principal{Subject: "auth0|admin"}
+
+	siteCases := []struct {
+		name     string
+		org      string
+		siteID   string
+		siteName string
+		timezone string
+	}{
+		{name: "missing organization", org: " ", siteID: "site-1", siteName: "HQ", timezone: "Europe/Madrid"},
+		{name: "missing site id", org: "org-1", siteID: " ", siteName: "HQ", timezone: "Europe/Madrid"},
+		{name: "missing name", org: "org-1", siteID: "site-1", siteName: " ", timezone: "Europe/Madrid"},
+		{name: "missing timezone", org: "org-1", siteID: "site-1", siteName: "HQ", timezone: " "},
+	}
+	for _, test := range siteCases {
+		t.Run("site "+test.name, func(t *testing.T) {
+			if err := service.CreateSite(context.Background(), principal, test.org, test.siteID, test.siteName, test.timezone); !errors.Is(err, ErrInvalidSiteTarget) {
+				t.Fatalf("err = %v, want ErrInvalidSiteTarget", err)
+			}
+		})
+	}
+	deviceCases := []struct {
+		name       string
+		org        string
+		siteID     string
+		deviceID   string
+		deviceName string
+		kind       string
+	}{
+		{name: "missing organization", org: " ", siteID: "site-1", deviceID: "device-1", deviceName: "Meter", kind: "meter"},
+		{name: "missing site id", org: "org-1", siteID: " ", deviceID: "device-1", deviceName: "Meter", kind: "meter"},
+		{name: "missing device id", org: "org-1", siteID: "site-1", deviceID: " ", deviceName: "Meter", kind: "meter"},
+		{name: "missing name", org: "org-1", siteID: "site-1", deviceID: "device-1", deviceName: " ", kind: "meter"},
+		{name: "missing kind", org: "org-1", siteID: "site-1", deviceID: "device-1", deviceName: "Meter", kind: " "},
+	}
+	for _, test := range deviceCases {
+		t.Run("device "+test.name, func(t *testing.T) {
+			if err := service.CreateDevice(context.Background(), principal, test.org, test.siteID, test.deviceID, test.deviceName, test.kind); !errors.Is(err, ErrInvalidSiteTarget) {
+				t.Fatalf("err = %v, want ErrInvalidSiteTarget", err)
+			}
+		})
+	}
+	if writer.createSiteCalls != 0 || writer.createDeviceCalls != 0 {
+		t.Fatalf("writer calls = %d/%d, want 0/0", writer.createSiteCalls, writer.createDeviceCalls)
+	}
+}
+
+func TestAdminSiteServicePropagatesWriterError(t *testing.T) {
+	want := errors.New("database unavailable")
+	writer := &fakeSiteWriter{err: want}
+	service := NewAdminSiteService("auth0|admin", writer)
+
+	if err := service.CreateSite(context.Background(), Principal{Subject: "auth0|admin"}, "org-1", "site-1", "HQ", "Europe/Madrid"); !errors.Is(err, want) {
+		t.Fatalf("err = %v, want %v", err, want)
+	}
+}
+
+func TestAdminSiteServiceRejectsUnavailableWriter(t *testing.T) {
+	service := NewAdminSiteService("auth0|admin", nil)
+
+	if err := service.CreateSite(context.Background(), Principal{Subject: "auth0|admin"}, "org-1", "site-1", "HQ", "Europe/Madrid"); !errors.Is(err, ErrSiteWriterUnavailable) {
+		t.Fatalf("err = %v, want ErrSiteWriterUnavailable", err)
+	}
+}
+
+func TestAdminSiteServiceFailsClosedWithoutConfiguration(t *testing.T) {
+	service := NewAdminSiteService("  ", &fakeSiteWriter{})
+
+	if err := service.CreateDevice(context.Background(), Principal{Subject: "auth0|admin"}, "org-1", "site-1", "device-1", "Meter", "meter"); !errors.Is(err, ErrAdminNotConfigured) {
+		t.Fatalf("err = %v, want ErrAdminNotConfigured", err)
+	}
+}
+
+func TestAdminSiteServiceRejectsNilService(t *testing.T) {
+	var service *AdminSiteService
+
+	if err := service.CreateSite(context.Background(), Principal{Subject: "auth0|admin"}, "org-1", "site-1", "HQ", "Europe/Madrid"); !errors.Is(err, ErrAdminNotConfigured) {
+		t.Fatalf("err = %v, want ErrAdminNotConfigured", err)
+	}
+}
