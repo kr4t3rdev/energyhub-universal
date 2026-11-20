@@ -32,6 +32,12 @@ var (
 	// assume a role that owns the objects or holds the administrative
 	// capability, even when it does not inherit those privileges yet.
 	ErrRuntimeRoleReachesPrivilegedRole = errors.New("database role can assume a privileged database role")
+	// ErrRuntimeRoleSharedCredential means another login role can assume the
+	// role the API authenticated as. Sharing the credential is the same
+	// problem as sharing the administrative credential: a second login role
+	// would read every tenant, because the read isolation trusts a session
+	// variable that any session can set.
+	ErrRuntimeRoleSharedCredential = errors.New("database role is shared with another login role")
 )
 
 // protectedTables lists the tenant tables the API credential must never be
@@ -78,8 +84,15 @@ SELECT session_user = current_user,
 // membership with INHERIT FALSE still allows SET ROLE: such a role has no
 // inherited write privilege, but it can take the owner role and write
 // everything afterwards.
+//
+// The graph is also walked in the opposite direction, to find the roles that
+// can assume the authenticated one. A credential that another login role can
+// take is a shared credential, and a shared read credential reads every
+// tenant: the read isolation trusts a session variable that the holder of the
+// credential can set.
 const roleReachabilityQuery = `
-WITH RECURSIVE reachable(role_oid) AS (
+WITH RECURSIVE
+reachable(role_oid) AS (
     SELECT role_oid.oid
       FROM pg_roles AS role_oid
      WHERE role_oid.rolname = session_user
@@ -87,6 +100,16 @@ WITH RECURSIVE reachable(role_oid) AS (
     SELECT membership.roleid
       FROM pg_auth_members AS membership
       JOIN reachable ON membership.member = reachable.role_oid
+),
+assumers(role_oid) AS (
+    SELECT membership.member
+      FROM pg_auth_members AS membership
+      JOIN pg_roles AS granted ON granted.oid = membership.roleid
+     WHERE granted.rolname = session_user
+    UNION
+    SELECT membership.member
+      FROM pg_auth_members AS membership
+      JOIN assumers ON membership.roleid = assumers.role_oid
 )
 SELECT
     EXISTS (
@@ -110,6 +133,14 @@ SELECT
           CROSS JOIN unnest(` + mutationPrivileges + `) AS privilege(privilege_name)
          WHERE to_regclass(protected.table_name) IS NOT NULL
            AND has_table_privilege(session_user, protected.table_name, privilege.privilege_name)
+    ),
+    EXISTS (
+        SELECT 1
+          FROM assumers
+          JOIN pg_roles AS candidate ON candidate.oid = assumers.role_oid
+         WHERE candidate.rolcanlogin
+           AND NOT candidate.rolsuper
+           AND candidate.rolname <> session_user
     )`
 
 // RowScanner is the minimal surface of a database row.
@@ -153,12 +184,13 @@ func NewRuntimeRoleVerifier(inspector RoleInspector) *RuntimeRoleVerifier {
 // VerifyRuntimeRole fails closed when the connected role is wider than the
 // read only credential the API is supposed to use.
 //
-// The check has three parts: the authenticated role must not be a superuser
-// nor bypass row level security, the session must still run as that role, and
-// the role must neither hold a mutation privilege on the tenant tables nor be
-// able to assume a privileged one. The audit trail cannot be inspected
-// directly because the role is not allowed to resolve its name, so the schema
-// access is the control that keeps it out of reach.
+// The check has four parts: the authenticated role must not be a superuser
+// nor bypass row level security, the session must still run as that role, the
+// role must neither hold a mutation privilege on the tenant tables nor be
+// able to assume a privileged one, and no other login role may assume it.
+// The audit trail cannot be inspected directly because the role is not allowed
+// to resolve its name, so the schema access is the control that keeps it out
+// of reach.
 func (v *RuntimeRoleVerifier) VerifyRuntimeRole(ctx context.Context) error {
 	if v == nil || v.inspector == nil {
 		return ErrRuntimeRoleUnknown
@@ -185,8 +217,9 @@ func (v *RuntimeRoleVerifier) VerifyRuntimeRole(ctx context.Context) error {
 	var reachesPrivilegedRole bool
 	var reachesUnsafeRole bool
 	var canWrite bool
+	var sharedCredential bool
 	err = v.inspector.QueryRow(ctx, roleReachabilityQuery).
-		Scan(&reachesPrivilegedRole, &reachesUnsafeRole, &canWrite)
+		Scan(&reachesPrivilegedRole, &reachesUnsafeRole, &canWrite, &sharedCredential)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrRuntimeRoleUnknown, err)
 	}
@@ -195,6 +228,9 @@ func (v *RuntimeRoleVerifier) VerifyRuntimeRole(ctx context.Context) error {
 	}
 	if canWrite {
 		return ErrRuntimeRoleCanWrite
+	}
+	if sharedCredential {
+		return ErrRuntimeRoleSharedCredential
 	}
 	return nil
 }

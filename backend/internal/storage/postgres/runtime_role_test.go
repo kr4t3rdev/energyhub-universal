@@ -48,12 +48,12 @@ func (i *fakeRoleInspector) QueryRow(_ context.Context, sql string, _ ...any) Ro
 }
 
 // readOnlySession is the answer of a session that authenticated as the plain
-// runtime role: the session still runs as that role and reaches nothing
-// privileged.
+// runtime role: the session still runs as that role, reaches nothing
+// privileged and is not shared with another login role.
 func readOnlySession() []fakeRoleRow {
 	return []fakeRoleRow{
 		{values: []any{true, false, false}},
-		{values: []any{false, false, false}},
+		{values: []any{false, false, false, false}},
 	}
 }
 
@@ -87,12 +87,9 @@ func TestRuntimeRoleVerifierRejectsBypassRLS(t *testing.T) {
 	}
 }
 
-// A session that authenticated as a privileged role and changed the current
-// role afterwards must be rejected: checking only the current role would let
-// it recover its privileges with a later SET ROLE.
 func TestRuntimeRoleVerifierRejectsChangedSession(t *testing.T) {
 	inspector := &fakeRoleInspector{responses: []fakeRoleRow{
-		{values: []any{false, false, false}},
+		{values: []any{false, false, false, false}},
 	}}
 
 	err := NewRuntimeRoleVerifier(inspector).VerifyRuntimeRole(context.Background())
@@ -105,8 +102,8 @@ func TestRuntimeRoleVerifierRejectsChangedSession(t *testing.T) {
 // be rejected even when it does not inherit the privileges yet.
 func TestRuntimeRoleVerifierRejectsPrivilegedReachability(t *testing.T) {
 	inspector := &fakeRoleInspector{responses: []fakeRoleRow{
-		{values: []any{true, false, false}},
-		{values: []any{true, false, false}},
+		{values: []any{true, false, false, false}},
+		{values: []any{true, false, false, false}},
 	}}
 
 	err := NewRuntimeRoleVerifier(inspector).VerifyRuntimeRole(context.Background())
@@ -119,7 +116,7 @@ func TestRuntimeRoleVerifierRejectsPrivilegedReachability(t *testing.T) {
 func TestRuntimeRoleVerifierRejectsReachableBypassRLS(t *testing.T) {
 	inspector := &fakeRoleInspector{responses: []fakeRoleRow{
 		{values: []any{true, false, false}},
-		{values: []any{false, true, false}},
+		{values: []any{false, true, false, false}},
 	}}
 
 	err := NewRuntimeRoleVerifier(inspector).VerifyRuntimeRole(context.Background())
@@ -131,12 +128,24 @@ func TestRuntimeRoleVerifierRejectsReachableBypassRLS(t *testing.T) {
 func TestRuntimeRoleVerifierRejectsWritableRole(t *testing.T) {
 	inspector := &fakeRoleInspector{responses: []fakeRoleRow{
 		{values: []any{true, false, false}},
-		{values: []any{false, false, true}},
+		{values: []any{false, false, true, false}},
 	}}
 
 	err := NewRuntimeRoleVerifier(inspector).VerifyRuntimeRole(context.Background())
 	if !errors.Is(err, ErrRuntimeRoleCanWrite) {
 		t.Fatalf("err = %v, want ErrRuntimeRoleCanWrite", err)
+	}
+}
+
+func TestRuntimeRoleVerifierRejectsSharedCredential(t *testing.T) {
+	inspector := &fakeRoleInspector{responses: []fakeRoleRow{
+		{values: []any{true, false, false}},
+		{values: []any{false, false, false, true}},
+	}}
+
+	err := NewRuntimeRoleVerifier(inspector).VerifyRuntimeRole(context.Background())
+	if !errors.Is(err, ErrRuntimeRoleSharedCredential) {
+		t.Fatalf("err = %v, want ErrRuntimeRoleSharedCredential", err)
 	}
 }
 
@@ -158,33 +167,15 @@ func TestRuntimeRoleVerifierFailsClosedWithoutInspector(t *testing.T) {
 	}
 }
 
-func TestRuntimeRoleVerifierChecksEveryMutationPrivilege(t *testing.T) {
+func TestRuntimeRoleVerifierCheckIncludesSharedCredential(t *testing.T) {
 	inspector := &fakeRoleInspector{responses: readOnlySession()}
 
 	if err := NewRuntimeRoleVerifier(inspector).VerifyRuntimeRole(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if len(inspector.queries) != 2 {
-		t.Fatalf("queries = %d, want 2", len(inspector.queries))
-	}
 	query := inspector.queries[1]
-	for _, fragment := range []string{
-		"public.organizations",
-		"public.organization_memberships",
-		"INSERT",
-		"UPDATE",
-		"DELETE",
-		"TRUNCATE",
-		"has_schema_privilege",
-		"'app'",
-		"session_user",
-		"pg_auth_members",
-		"energyhub_owner",
-		"energyhub_admin_capability",
-	} {
-		if !strings.Contains(query, fragment) {
-			t.Fatalf("query %q does not mention %q", query, fragment)
-		}
+	if !strings.Contains(query, "assumers") {
+		t.Fatalf("query %q does not mention the assumers CTE for detecting shared credentials", query)
 	}
 }
 

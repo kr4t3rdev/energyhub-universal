@@ -119,6 +119,55 @@ func TestIntegrationRuntimeRoleVerifierRejectsSetOnlyOwnerMembership(t *testing.
 	}
 }
 
+// TestIntegrationRuntimeRoleVerifierRejectsSharedCredential proves that a
+// login role that can assume the runtime credential is rejected. Such a role
+// would read every tenant, because the read isolation trusts a session
+// variable that the holder of the credential can set.
+func TestIntegrationRuntimeRoleVerifierRejectsSharedCredential(t *testing.T) {
+	superuserURL := integrationSuperuserURL(t)
+
+	ctx := context.Background()
+	environment := newIntegrationEnvironment(t, superuserURL)
+
+	superuserPool := connect(t, superuserURL)
+	defer superuserPool.Close()
+
+	// Create a shared credential: a login role that inherits the runtime role.
+	sharedRuntimeRole := createEphemeralRole(t, ctx, superuserURL, "energyhub_it_shared_runtime", integrationRuntimeRole)
+
+	// The verifier must reject the shared credential.
+	sharedPool := connect(t, withCredentials(superuserURL, sharedRuntimeRole, integrationPassword, environment.databaseName))
+	defer sharedPool.Close()
+
+	verifier := NewRuntimeRoleVerifier(NewPgxRoleInspector(sharedPool))
+	err := verifier.VerifyRuntimeRole(ctx)
+	if err == nil {
+		t.Fatal("err = nil, want the shared credential to be rejected")
+	}
+	if !errors.Is(err, ErrRuntimeRoleSharedCredential) {
+		t.Fatalf("err = %v, want ErrRuntimeRoleSharedCredential", err)
+	}
+
+	// The shared credential can read the tenant tables (no RLS bypass needed),
+	// but cannot write directly.
+	var canSelect bool
+	if err := sharedPool.QueryRow(ctx,
+		"SELECT has_table_privilege(current_user, 'public.organizations', 'SELECT')").Scan(&canSelect); err != nil {
+		t.Fatalf("read the select privilege: %v", err)
+	}
+	if !canSelect {
+		t.Fatal("the shared credential cannot read the tenant tables")
+	}
+
+	// Clean up: revoke and drop.
+	if _, err := superuserPool.Exec(ctx, "REVOKE "+integrationRuntimeRole+" FROM "+sharedRuntimeRole); err != nil {
+		t.Fatalf("revoke the runtime role from the shared credential: %v", err)
+	}
+	if _, err := superuserPool.Exec(ctx, "DROP ROLE IF EXISTS "+sharedRuntimeRole); err != nil {
+		t.Fatalf("drop the shared credential: %v", err)
+	}
+}
+
 // withOption appends a PostgreSQL connection option to a connection string.
 //
 // The value is percent encoded: PostgreSQL reads the query string of the
