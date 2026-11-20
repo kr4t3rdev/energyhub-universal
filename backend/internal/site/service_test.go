@@ -9,9 +9,9 @@ import (
 )
 
 type fakeReader struct {
-	listSitesSubject       string
+	listSitesSubject        string
 	listSitesOrganizationID string
-	overviewSubject        string
+	overviewSubject         string
 	overviewOrganizationID  string
 	overviewSiteID          string
 	devicesSubject          string
