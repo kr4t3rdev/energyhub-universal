@@ -29,7 +29,7 @@ func TestSiteWriterCreatesSiteThroughTheAdminFunction(t *testing.T) {
 	if len(tx.execCalls) != 1 || tx.execCalls[0] != createSiteFunctionQuery {
 		t.Fatalf("exec calls = %#v, want only the admin function call", tx.execCalls)
 	}
-	if len(tx.execArgs[0]) != 4 || tx.execArgs[0][0] != "org-1" || tx.execArgs[0][1] != "site-1" || tx.execArgs[0][2] != "HQ" || tx.execArgs[0][3] != "Europe/Madrid" {
+	if len(tx.execArgs[0]) != 4 || tx.execArgs[0][0] != "site-1" || tx.execArgs[0][1] != "org-1" || tx.execArgs[0][2] != "HQ" || tx.execArgs[0][3] != "Europe/Madrid" {
 		t.Fatalf("create site args = %#v", tx.execArgs[0])
 	}
 	if !tx.commitCalled {
@@ -59,7 +59,7 @@ func TestSiteWriterCreatesDeviceThroughTheAdminFunction(t *testing.T) {
 	if len(tx.execCalls) != 1 || tx.execCalls[0] != createSiteDeviceFunctionQuery {
 		t.Fatalf("exec calls = %#v, want only the admin function call", tx.execCalls)
 	}
-	if len(tx.execArgs[0]) != 5 || tx.execArgs[0][0] != "org-1" || tx.execArgs[0][1] != "site-1" || tx.execArgs[0][2] != "device-1" || tx.execArgs[0][3] != "Main Meter" || tx.execArgs[0][4] != "meter" {
+	if len(tx.execArgs[0]) != 5 || tx.execArgs[0][0] != "device-1" || tx.execArgs[0][1] != "site-1" || tx.execArgs[0][2] != "org-1" || tx.execArgs[0][3] != "Main Meter" || tx.execArgs[0][4] != "meter" {
 		t.Fatalf("create device args = %#v", tx.execArgs[0])
 	}
 	if !tx.commitCalled {

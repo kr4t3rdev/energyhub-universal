@@ -59,7 +59,8 @@ func (w *SiteWriter) CreateSite(
 		}
 	}()
 
-	if err := tx.Exec(ctx, createSiteFunctionQuery, organizationID, siteID, name, timezone); err != nil {
+	// app.create_site takes the created site id first, then its parent.
+	if err := tx.Exec(ctx, createSiteFunctionQuery, siteID, organizationID, name, timezone); err != nil {
 		return err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -101,7 +102,9 @@ func (w *SiteWriter) CreateDevice(
 		}
 	}()
 
-	if err := tx.Exec(ctx, createSiteDeviceFunctionQuery, organizationID, siteID, deviceID, name, kind); err != nil {
+	// app.create_site_device takes the created device id first, then its
+	// site and organization.
+	if err := tx.Exec(ctx, createSiteDeviceFunctionQuery, deviceID, siteID, organizationID, name, kind); err != nil {
 		return err
 	}
 	if err := tx.Commit(ctx); err != nil {

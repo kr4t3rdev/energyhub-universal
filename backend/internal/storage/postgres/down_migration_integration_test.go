@@ -116,6 +116,28 @@ func TestIntegrationDownMigrationsExecute(t *testing.T) {
 		}
 	})
 
+	t.Run("the 000007 rollback keeps the sites boundary", func(t *testing.T) {
+		executeSQLFile(t, ctx, privilegedPool, sitesDownMigrationPath)
+
+		// The tables are still there and the write path still works.
+		if _, err := adminPool.Exec(ctx, "SELECT app.create_organization('org-rollback-site', 'Rollback Site Org')"); err != nil {
+			t.Fatalf("create organization after the rollback: %v", err)
+		}
+		writer := NewSiteWriter(NewDB(adminPool), "dev|admin")
+		if err := writer.CreateSite(ctx, "dev|admin", "org-rollback-site", "11111111-1111-4111-8111-111111111111", "HQ", "Europe/Madrid"); err != nil {
+			t.Fatalf("create site after the rollback: %v", err)
+		}
+
+		// The runtime credential still cannot write the sites table.
+		runtimePool := connect(t, environment.runtimeURL)
+		defer runtimePool.Close()
+		if _, err := runtimePool.Exec(ctx, "INSERT INTO public.sites (id, organization_id, name, timezone) VALUES ('22222222-2222-4222-8222-222222222222', 'org-rollback', 'Direct', 'Europe/Madrid')"); err == nil {
+			t.Fatal("the runtime credential can write the sites table after the rollback")
+		} else {
+			assertPermissionDenied(t, err)
+		}
+	})
+
 	t.Run("the 000006 rollback keeps the audit trail closed", func(t *testing.T) {
 		executeSQLFile(t, ctx, privilegedPool, auditReadDownMigrationPath)
 
