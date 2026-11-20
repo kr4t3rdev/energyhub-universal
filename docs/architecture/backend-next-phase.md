@@ -1,13 +1,29 @@
 # Diseño de la siguiente fase backend
 
-Estado: diseño aprobado e implementado en el alcance de membresías. Hay un verifier Auth0 conectado a una ruta protegida (`GET /v1/organizations`) y acceso a PostgreSQL con dos credenciales separadas (runtime y admin). La frontera de escritura administrativa está reforzada con una migración adicional (`000004`), el servidor HTTP tiene límites de recursos y el emisor OIDC de desarrollo está restringido a loopback. No hay endpoints de dispositivos, telemetría ni datos reales.
+Estado: diseño aprobado e implementado en el alcance de membresías y de sitios/dispositivos (2026-11-20, evidencia en `docs/evidence/backend-sites-2026-11-20/`). Hay un verifier Auth0 conectado a rutas protegidas (`GET /v1/organizations`, `GET /v1/me`, `GET /v1/organizations/{organizationId}/sites`, `GET /v1/organizations/{organizationId}/sites/{siteId}/overview`, `GET /v1/organizations/{organizationId}/sites/{siteId}/devices`) y acceso a PostgreSQL con dos credenciales separadas (runtime y admin). La frontera de escritura administrativa está reforzada con migraciones adicionales (`000004`, `000007` para sitios y dispositivos), el servidor HTTP tiene límites de recursos y el emisor OIDC de desarrollo está restringido a loopback. Sigue sin haber telemetría ni datos reales: el overview devuelve `readings: []` y `updatedAt: null`.
 
 ## Límites de la entrega actual
 
 - `GET /health` sigue siendo únicamente una señal de vida del proceso.
 - La web consume `FixtureSiteOverviewProvider`; no hace peticiones al backend.
 - No se muestra información de usuarios, organizaciones, dispositivos reales ni telemetría.
-- El contrato propuesto en `contracts/openapi/next-phase-proposal.yaml` es un artefacto de diseño y no declara disponibilidad de esos endpoints.
+- Los endpoints del contrato propuesto en `contracts/openapi/next-phase-proposal.yaml` están implementados desde el 2026-11-20; la propuesta sigue siendo el artefacto de diseño y no se modificó. La creación de sitios y dispositivos es solo por CLI de admin (`create-site` / `create-device`); no hay mutaciones HTTP.
+
+## Implementación de los endpoints de sitios (2026-11-20)
+
+- Migración `000007`: tablas `sites` y `site_devices` con RLS habilitado y
+  forzado, propiedad `energyhub_owner`, runtime solo SELECT y funciones
+  SECURITY DEFINER `app.create_site` / `app.create_site_device` con
+  comprobación de capacidad y auditoría.
+- `GET /v1/me` devuelve el mismo `CurrentUser` que `GET /v1/organizations`.
+- El reader Postgres fija `app.current_subject` en la transacción; el
+  servicio de `internal/site` le pasa el subject del ámbito verificado (los
+  métodos del `Reader` ganaron un parámetro `subject`).
+- Errores sin filtrar existencia: no miembro → 403; sitio no visible o
+  inexistente (incluido UUID malformado) → 404; sin token o inválido → 401.
+- Verificación: 297 casos en verde, `go vet` / `go build` / `go test -race`
+  en verde, integración real 15/15 y E2E 12/12. Detalle en
+  `docs/evidence/backend-sites-2026-11-20/tdd.md`.
 
 ## Autenticación propuesta
 

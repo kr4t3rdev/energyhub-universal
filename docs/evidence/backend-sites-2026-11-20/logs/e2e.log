@@ -1,0 +1,45 @@
+E2E local stack — 2026-11-20
+PostgreSQL 17 (Homebrew, 127.0.0.1:5432), dev issuer on 127.0.0.1:8089,
+API on 127.0.0.1:8080 (LISTEN_ADDR=127.0.0.1:8080, no admin credential).
+Setup: PGPORT=5432 PGUSER=postgres bash scripts/dev-stack.sh (migrations
+000001-000007 applied to energyhub_dev), then via the admin CLI:
+  create-organization org-e2e-sites "E2E Sites Org"
+  grant org-e2e-sites dev|user-1 viewer
+  create-organization org-e2e-other "E2E Other Org"
+  create-site org-e2e-sites "E2E HQ" Europe/Madrid
+    -> site f657f0df-dd5e-4c1d-96ed-0885697e6165
+  create-device org-e2e-sites <site> "E2E Meter" meter
+    -> device 9f7853f7-b0c6-4f2d-b192-e2343c4ad8af
+  create-site org-e2e-other "Other Branch" Europe/Madrid
+    -> site 7864ca0b-965c-48ca-8fd5-830a1c185a68
+Token from the dev issuer as user1 (dev|user-1). The token itself was never
+printed; TOKEN_LEN=572. API log: "protected routes enabled for issuer
+http://127.0.0.1:8089", "api listening on 127.0.0.1:8080".
+
+[OK] GET /v1/me -> 200 (want 200)
+{"subject":"dev|user-1","organizations":[{"id":"org-e2e-sites","name":"E2E Sites Org","role":"viewer"}]}
+[OK] GET /v1/organizations (existing) -> 200 (want 200)
+{"subject":"dev|user-1","organizations":[{"id":"org-e2e-sites","name":"E2E Sites Org","role":"viewer"}]}
+[OK] GET /v1/organizations/org-e2e-sites/sites -> 200 (want 200)
+{"items":[{"id":"f657f0df-dd5e-4c1d-96ed-0885697e6165","name":"E2E HQ","timezone":"Europe/Madrid"}]}
+[OK] GET overview -> 200 (want 200)
+{"site":{"id":"f657f0df-dd5e-4c1d-96ed-0885697e6165","name":"E2E HQ","timezone":"Europe/Madrid"},"readings":[],"devices":[{"id":"9f7853f7-b0c6-4f2d-b192-e2343c4ad8af","name":"E2E Meter","kind":"meter","status":null}],"updatedAt":null}
+[OK] GET devices -> 200 (want 200)
+{"items":[{"id":"9f7853f7-b0c6-4f2d-b192-e2343c4ad8af","name":"E2E Meter","kind":"meter","status":null}]}
+[OK] GET /v1/me no token -> 401 (want 401)
+{"code":"unauthenticated","message":"authentication is required","requestId":"af65beefd75877f3b976286cf9587a1e"}
+[OK] GET /v1/me tampered token -> 401 (want 401)
+{"code":"unauthenticated","message":"authentication is required","requestId":"560367bf13e600868330bedce99c18b0"}
+[OK] GET other org sites (403) -> 403 (want 403)
+{"code":"forbidden","message":"the organization is not accessible","requestId":"f98b5dc29a0580d95fc6f4cbd757604d"}
+[OK] GET overview foreign site (404) -> 404 (want 404)
+{"code":"not_found","message":"the site was not found","requestId":"227d00e0b71a2eb07910cf5302647ca3"}
+[OK] GET overview unknown site (404) -> 404 (want 404)
+{"code":"not_found","message":"the site was not found","requestId":"13a92fa6a2303f658db4b542de3906e4"}
+[OK] GET overview malformed site (404) -> 404 (want 404)
+{"code":"not_found","message":"the site was not found","requestId":"e3ff8b350ca04c765d0e6746ff730928"}
+[OK] GET devices foreign site (404) -> 404 (want 404)
+{"code":"not_found","message":"the site was not found","requestId":"a1eec4db8c2c9b4db4533b981cabc35c"}
+
+12/12 checks OK. The API process was stopped afterwards; the dev issuer was
+left running, as dev-stack.sh leaves it.

@@ -1,0 +1,97 @@
+=== RUN   TestIntegrationProtectedTablePrivilegesAreRevoked
+--- PASS: TestIntegrationProtectedTablePrivilegesAreRevoked (0.54s)
+=== RUN   TestIntegrationBootstrapRejectsUnexpectedRoleMembership
+--- PASS: TestIntegrationBootstrapRejectsUnexpectedRoleMembership (0.30s)
+=== RUN   TestIntegrationBootstrapRejectsSharedAdminCredential
+--- PASS: TestIntegrationBootstrapRejectsSharedAdminCredential (0.37s)
+=== RUN   TestIntegrationAdminFunctionsAreOwnedByTheOwnerRole
+--- PASS: TestIntegrationAdminFunctionsAreOwnedByTheOwnerRole (0.34s)
+=== RUN   TestIntegrationDownMigrationsExecute
+=== RUN   TestIntegrationDownMigrationsExecute/the_000005_rollback_keeps_the_protected_tables_closed
+=== RUN   TestIntegrationDownMigrationsExecute/the_000004_rollback_keeps_the_hardened_boundary
+=== RUN   TestIntegrationDownMigrationsExecute/the_000003_rollback_does_not_restore_the_forgeable_policies
+=== RUN   TestIntegrationDownMigrationsExecute/the_000007_rollback_keeps_the_sites_boundary
+=== RUN   TestIntegrationDownMigrationsExecute/the_000006_rollback_keeps_the_audit_trail_closed
+--- PASS: TestIntegrationDownMigrationsExecute (0.43s)
+    --- PASS: TestIntegrationDownMigrationsExecute/the_000005_rollback_keeps_the_protected_tables_closed (0.02s)
+    --- PASS: TestIntegrationDownMigrationsExecute/the_000004_rollback_keeps_the_hardened_boundary (0.01s)
+    --- PASS: TestIntegrationDownMigrationsExecute/the_000003_rollback_does_not_restore_the_forgeable_policies (0.03s)
+    --- PASS: TestIntegrationDownMigrationsExecute/the_000007_rollback_keeps_the_sites_boundary (0.02s)
+    --- PASS: TestIntegrationDownMigrationsExecute/the_000006_rollback_keeps_the_audit_trail_closed (0.00s)
+=== RUN   TestIntegrationAdminWriteRollbackKeepsTheAuditTrail
+--- PASS: TestIntegrationAdminWriteRollbackKeepsTheAuditTrail (0.44s)
+=== RUN   TestIntegrationMigrationsAreForwardOnly
+--- PASS: TestIntegrationMigrationsAreForwardOnly (0.42s)
+=== RUN   TestIntegrationTenantIsolationAndAdminWrites
+=== RUN   TestIntegrationTenantIsolationAndAdminWrites/admin_provisions_organization_and_membership
+=== RUN   TestIntegrationTenantIsolationAndAdminWrites/runtime_reads_only_its_own_memberships
+=== RUN   TestIntegrationTenantIsolationAndAdminWrites/runtime_cannot_write_tables_directly
+=== RUN   TestIntegrationTenantIsolationAndAdminWrites/runtime_cannot_call_the_admin_write_functions
+=== RUN   TestIntegrationTenantIsolationAndAdminWrites/runtime_cannot_forge_administrator_reads
+=== RUN   TestIntegrationTenantIsolationAndAdminWrites/admin_cannot_write_tables_directly
+=== RUN   TestIntegrationTenantIsolationAndAdminWrites/admin_cannot_read_the_tenant_tables
+=== RUN   TestIntegrationTenantIsolationAndAdminWrites/admin_revokes_a_membership
+=== RUN   TestIntegrationTenantIsolationAndAdminWrites/admin_functions_reject_invalid_input
+=== RUN   TestIntegrationTenantIsolationAndAdminWrites/creating_an_existing_organization_is_a_conflict
+=== RUN   TestIntegrationTenantIsolationAndAdminWrites/administrative_writes_are_audited
+--- PASS: TestIntegrationTenantIsolationAndAdminWrites (0.52s)
+    --- PASS: TestIntegrationTenantIsolationAndAdminWrites/admin_provisions_organization_and_membership (0.01s)
+    --- PASS: TestIntegrationTenantIsolationAndAdminWrites/runtime_reads_only_its_own_memberships (0.01s)
+    --- PASS: TestIntegrationTenantIsolationAndAdminWrites/runtime_cannot_write_tables_directly (0.00s)
+    --- PASS: TestIntegrationTenantIsolationAndAdminWrites/runtime_cannot_call_the_admin_write_functions (0.01s)
+    --- PASS: TestIntegrationTenantIsolationAndAdminWrites/runtime_cannot_forge_administrator_reads (0.01s)
+    --- PASS: TestIntegrationTenantIsolationAndAdminWrites/admin_cannot_write_tables_directly (0.01s)
+    --- PASS: TestIntegrationTenantIsolationAndAdminWrites/admin_cannot_read_the_tenant_tables (0.01s)
+    --- PASS: TestIntegrationTenantIsolationAndAdminWrites/admin_revokes_a_membership (0.02s)
+    --- PASS: TestIntegrationTenantIsolationAndAdminWrites/admin_functions_reject_invalid_input (0.01s)
+    --- PASS: TestIntegrationTenantIsolationAndAdminWrites/creating_an_existing_organization_is_a_conflict (0.02s)
+    --- PASS: TestIntegrationTenantIsolationAndAdminWrites/administrative_writes_are_audited (0.02s)
+=== RUN   TestIntegrationDocumentsForgeableTenantContext
+    rls_integration_test.go:286: known limitation: the runtime credential can forge app.current_subject; the database credential is the trust boundary for reads
+--- PASS: TestIntegrationDocumentsForgeableTenantContext (0.48s)
+=== RUN   TestIntegrationMigrationWithNonSuperuserOwner
+=== RUN   TestIntegrationMigrationWithNonSuperuserOwner/owner_role_owns_the_protected_objects
+=== RUN   TestIntegrationMigrationWithNonSuperuserOwner/admin_writes_still_work_through_the_functions
+--- PASS: TestIntegrationMigrationWithNonSuperuserOwner (0.46s)
+    --- PASS: TestIntegrationMigrationWithNonSuperuserOwner/owner_role_owns_the_protected_objects (0.00s)
+    --- PASS: TestIntegrationMigrationWithNonSuperuserOwner/admin_writes_still_work_through_the_functions (0.05s)
+=== RUN   TestIntegrationRuntimeRoleCannotKeepTableOwnership
+=== RUN   TestIntegrationRuntimeRoleCannotKeepTableOwnership/tables_and_schema_belong_to_energyhub_owner
+=== RUN   TestIntegrationRuntimeRoleCannotKeepTableOwnership/the_previous_owner_cannot_change_the_schema
+=== RUN   TestIntegrationRuntimeRoleCannotKeepTableOwnership/the_previous_owner_cannot_write
+=== RUN   TestIntegrationRuntimeRoleCannotKeepTableOwnership/the_runtime_credential_cannot_write_either
+--- PASS: TestIntegrationRuntimeRoleCannotKeepTableOwnership (0.44s)
+    --- PASS: TestIntegrationRuntimeRoleCannotKeepTableOwnership/tables_and_schema_belong_to_energyhub_owner (0.00s)
+    --- PASS: TestIntegrationRuntimeRoleCannotKeepTableOwnership/the_previous_owner_cannot_change_the_schema (0.00s)
+    --- PASS: TestIntegrationRuntimeRoleCannotKeepTableOwnership/the_previous_owner_cannot_write (0.00s)
+    --- PASS: TestIntegrationRuntimeRoleCannotKeepTableOwnership/the_runtime_credential_cannot_write_either (0.04s)
+=== RUN   TestIntegrationRuntimeRoleVerifierRejectsMasqueradingSession
+--- PASS: TestIntegrationRuntimeRoleVerifierRejectsMasqueradingSession (0.40s)
+=== RUN   TestIntegrationRuntimeRoleVerifierRejectsSetOnlyOwnerMembership
+--- PASS: TestIntegrationRuntimeRoleVerifierRejectsSetOnlyOwnerMembership (0.40s)
+=== RUN   TestIntegrationRuntimeRoleVerifierRejectsSharedCredential
+--- PASS: TestIntegrationRuntimeRoleVerifierRejectsSharedCredential (0.42s)
+=== RUN   TestIntegrationSiteTenantIsolationAndAdminWrites
+=== RUN   TestIntegrationSiteTenantIsolationAndAdminWrites/admin_provisions_sites_and_devices
+=== RUN   TestIntegrationSiteTenantIsolationAndAdminWrites/the_admin_writes_are_audited
+=== RUN   TestIntegrationSiteTenantIsolationAndAdminWrites/runtime_reads_only_its_own_sites
+=== RUN   TestIntegrationSiteTenantIsolationAndAdminWrites/runtime_overview_has_no_readings_yet
+=== RUN   TestIntegrationSiteTenantIsolationAndAdminWrites/runtime_cannot_see_another_organization_site
+=== RUN   TestIntegrationSiteTenantIsolationAndAdminWrites/runtime_lists_only_its_own_devices
+=== RUN   TestIntegrationSiteTenantIsolationAndAdminWrites/runtime_cannot_write_sites_directly
+=== RUN   TestIntegrationSiteTenantIsolationAndAdminWrites/runtime_cannot_call_the_admin_site_functions
+=== RUN   TestIntegrationSiteTenantIsolationAndAdminWrites/admin_cannot_read_the_tenant_site_tables
+=== RUN   TestIntegrationSiteTenantIsolationAndAdminWrites/deleting_an_organization_cascades_to_its_sites_and_devices
+--- PASS: TestIntegrationSiteTenantIsolationAndAdminWrites (0.45s)
+    --- PASS: TestIntegrationSiteTenantIsolationAndAdminWrites/admin_provisions_sites_and_devices (0.01s)
+    --- PASS: TestIntegrationSiteTenantIsolationAndAdminWrites/the_admin_writes_are_audited (0.01s)
+    --- PASS: TestIntegrationSiteTenantIsolationAndAdminWrites/runtime_reads_only_its_own_sites (0.01s)
+    --- PASS: TestIntegrationSiteTenantIsolationAndAdminWrites/runtime_overview_has_no_readings_yet (0.01s)
+    --- PASS: TestIntegrationSiteTenantIsolationAndAdminWrites/runtime_cannot_see_another_organization_site (0.01s)
+    --- PASS: TestIntegrationSiteTenantIsolationAndAdminWrites/runtime_lists_only_its_own_devices (0.01s)
+    --- PASS: TestIntegrationSiteTenantIsolationAndAdminWrites/runtime_cannot_write_sites_directly (0.01s)
+    --- PASS: TestIntegrationSiteTenantIsolationAndAdminWrites/runtime_cannot_call_the_admin_site_functions (0.01s)
+    --- PASS: TestIntegrationSiteTenantIsolationAndAdminWrites/admin_cannot_read_the_tenant_site_tables (0.01s)
+    --- PASS: TestIntegrationSiteTenantIsolationAndAdminWrites/deleting_an_organization_cascades_to_its_sites_and_devices (0.02s)
+PASS
+ok  	energyhub-universal/backend/internal/storage/postgres	9.661s

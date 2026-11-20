@@ -1,0 +1,12 @@
+ok  	energyhub-universal/backend/cmd/api	0.351s
+ok  	energyhub-universal/backend/cmd/devoidc	0.364s
+ok  	energyhub-universal/backend/cmd/membership	0.436s
+ok  	energyhub-universal/backend/cmd/migrate	0.401s
+ok  	energyhub-universal/backend/internal/authn	0.850s
+ok  	energyhub-universal/backend/internal/authz	0.732s
+ok  	energyhub-universal/backend/internal/contracts	0.646s
+ok  	energyhub-universal/backend/internal/devoidc	1.746s
+ok  	energyhub-universal/backend/internal/platform/httpapi	0.682s
+ok  	energyhub-universal/backend/internal/site	0.640s
+ok  	energyhub-universal/backend/internal/storage/postgres	0.635s
+?   	energyhub-universal/backend/migrations	[no test files]
