@@ -7,15 +7,26 @@ import (
 
 	"energyhub-universal/backend/internal/authn"
 	"energyhub-universal/backend/internal/authz"
+	"energyhub-universal/backend/internal/site"
 )
 
 type routerOptions struct {
 	verifier    authn.Verifier
 	memberships authz.MembershipReader
+	sites       *site.Service
 }
 
 // Option configures the router.
 type Option func(*routerOptions)
+
+// WithSites enables the site routes. They are only registered when the
+// verifier, the membership reader and the site service are all present, so a
+// half-configured deployment exposes no protected surface.
+func WithSites(service *site.Service) Option {
+	return func(options *routerOptions) {
+		options.sites = service
+	}
+}
 
 // WithAuthentication enables the protected routes. Routes are only registered
 // when both the verifier and the membership reader are present, so a
@@ -50,6 +61,13 @@ func NewRouter(options ...Option) http.Handler {
 			r.Use(privateResponseHeaders)
 			r.Use(authn.Middleware(settings.verifier, authenticationErrorResponder))
 			r.Get("/organizations", organizationsHandler(settings.memberships).ServeHTTP)
+			if settings.sites != nil {
+				authorizer := authz.NewMembershipAuthorizer(settings.memberships)
+				r.Get("/me", meHandler(settings.memberships).ServeHTTP)
+				r.Get("/organizations/{organizationId}/sites", listSitesHandler(authorizer, settings.sites).ServeHTTP)
+				r.Get("/organizations/{organizationId}/sites/{siteId}/overview", siteOverviewHandler(authorizer, settings.sites).ServeHTTP)
+				r.Get("/organizations/{organizationId}/sites/{siteId}/devices", listDevicesHandler(authorizer, settings.sites).ServeHTTP)
+			}
 		})
 	}
 

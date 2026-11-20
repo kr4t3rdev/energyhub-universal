@@ -22,6 +22,7 @@ import (
 
 	"energyhub-universal/backend/internal/authn"
 	"energyhub-universal/backend/internal/platform/httpapi"
+	"energyhub-universal/backend/internal/site"
 	"energyhub-universal/backend/internal/storage/postgres"
 )
 
@@ -199,7 +200,11 @@ func buildRouter(ctx context.Context, config apiConfig) (http.Handler, func(), e
 	}
 
 	reader := postgres.NewMembershipReader(postgres.NewDB(pool))
+	siteService := site.NewService(postgres.NewSiteReader(postgres.NewDB(pool)))
 	log.Printf("protected routes enabled for issuer %s", config.auth.Issuer)
 
-	return httpapi.NewRouter(httpapi.WithAuthentication(verifier, reader)), cleanup, nil
+	return httpapi.NewRouter(
+		httpapi.WithAuthentication(verifier, reader),
+		httpapi.WithSites(siteService),
+	), cleanup, nil
 }
