@@ -14,6 +14,8 @@ var rlsMigrationPath = "../../../migrations/000002_enable_tenant_rls.up.sql"
 var rlsDownMigrationPath = "../../../migrations/000002_enable_tenant_rls.down.sql"
 var adminWriteMigrationPath = "../../../migrations/000003_secure_admin_writes.up.sql"
 var adminWriteDownMigrationPath = "../../../migrations/000003_secure_admin_writes.down.sql"
+var sitesMigrationPath = "../../../migrations/000007_create_sites_and_devices.up.sql"
+var sitesDownMigrationPath = "../../../migrations/000007_create_sites_and_devices.down.sql"
 
 func TestMigrationKeepsMembershipsTenantScoped(t *testing.T) {
 	schema, err := os.ReadFile(migrationPath)
@@ -137,6 +139,7 @@ func TestDownMigrationsDoNotReopenTheWeakerBoundary(t *testing.T) {
 		hardenDownMigrationPath,
 		leftoverPrivilegeDownMigrationPath,
 		auditReadDownMigrationPath,
+		sitesDownMigrationPath,
 	}
 
 	for _, path := range paths {
@@ -184,6 +187,11 @@ func TestDownMigrationsDoNotReopenTheWeakerBoundary(t *testing.T) {
 		auditReadDownMigrationPath: {
 			"app.admin_audit_log",
 			"public",
+		},
+		sitesDownMigrationPath: {
+			"public.sites",
+			"public.site_devices",
+			"energyhub_owner",
 		},
 	}
 	for path, fragments := range required {
@@ -250,5 +258,55 @@ func TestRLSDownMigrationRemovesPolicies(t *testing.T) {
 		if !strings.Contains(sql, "ALTER TABLE "+table+" DISABLE ROW LEVEL SECURITY") {
 			t.Fatalf("RLS down migration does not disable RLS on %s", table)
 		}
+	}
+}
+
+func TestSitesMigrationCreatesTenantScopedTables(t *testing.T) {
+	schema, err := os.ReadFile(sitesMigrationPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sql := string(schema)
+
+	for _, required := range []string{
+		"CREATE TABLE public.sites",
+		"CREATE TABLE public.site_devices",
+		"organization_id TEXT NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE",
+		"site_id UUID NOT NULL REFERENCES public.sites(id) ON DELETE CASCADE",
+		"ALTER TABLE public.sites ENABLE ROW LEVEL SECURITY",
+		"ALTER TABLE public.sites FORCE ROW LEVEL SECURITY",
+		"ALTER TABLE public.site_devices ENABLE ROW LEVEL SECURITY",
+		"ALTER TABLE public.site_devices FORCE ROW LEVEL SECURITY",
+		"CREATE POLICY sites_select_member",
+		"CREATE POLICY site_devices_select_member",
+		"current_setting('app.current_subject', true)",
+		"CREATE OR REPLACE FUNCTION app.create_site",
+		"CREATE OR REPLACE FUNCTION app.create_site_device",
+		"SECURITY DEFINER",
+		"SET search_path = ''",
+		"pg_has_role(session_user, 'energyhub_admin_capability', 'member')",
+		"ALTER FUNCTION app.create_site",
+		"ALTER FUNCTION app.create_site_device",
+		"OWNER TO energyhub_owner",
+		"GRANT SELECT ON public.sites, public.site_devices TO energyhub_runtime",
+		"REVOKE ALL ON FUNCTION app.create_site",
+		"REVOKE ALL ON FUNCTION app.create_site_device",
+		"GRANT EXECUTE ON FUNCTION app.create_site",
+		"GRANT EXECUTE ON FUNCTION app.create_site_device",
+		"TO energyhub_membership_admin",
+		"'create_site'",
+		"'create_site_device'",
+		"TRUNCATE",
+	} {
+		if !strings.Contains(sql, required) {
+			t.Fatalf("sites migration is missing %q", required)
+		}
+	}
+
+	if strings.Contains(executableSQL(sql), "GRANT ALL") {
+		t.Fatal("sites migration grants broad privileges")
+	}
+	if strings.Contains(executableSQL(sql), "USING (true)") {
+		t.Fatal("sites migration contains a permissive USING (true) policy")
 	}
 }
