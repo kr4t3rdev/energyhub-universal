@@ -14,3 +14,4 @@ local.properties
 
 # Generated locally by the graphify hook after every commit.
 graphify-out/
+.vercel/

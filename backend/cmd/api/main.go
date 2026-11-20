@@ -14,7 +14,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -45,6 +47,32 @@ func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+var (
+	vercelHandlerOnce sync.Once
+	vercelHandler     http.Handler
+	vercelHandlerErr  error
+)
+
+// Handler is the Vercel Go runtime entry point. The standalone run function
+// remains available for local development and container deployments.
+func Handler(w http.ResponseWriter, r *http.Request) {
+	vercelHandlerOnce.Do(func() {
+		config, err := loadAPIConfig(os.Getenv)
+		if err != nil {
+			vercelHandlerErr = err
+			return
+		}
+		vercelHandler, _, vercelHandlerErr = buildRouter(context.Background(), config)
+	})
+
+	if vercelHandlerErr != nil {
+		log.Printf("initialize API handler: %v", vercelHandlerErr)
+		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	vercelHandler.ServeHTTP(w, r)
 }
 
 type apiConfig struct {
@@ -90,9 +118,9 @@ func loadAPIConfig(getenv func(string) string) (apiConfig, error) {
 }
 
 func run() error {
-	addr := strings.TrimSpace(os.Getenv("LISTEN_ADDR"))
-	if addr == "" {
-		addr = defaultListenAddr
+	addr, err := configuredListenAddr(os.Getenv)
+	if err != nil {
+		return err
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -141,6 +169,21 @@ func run() error {
 		defer cancel()
 		return server.Shutdown(shutdownContext)
 	}
+}
+
+func configuredListenAddr(getenv func(string) string) (string, error) {
+	if port := strings.TrimSpace(getenv("PORT")); port != "" {
+		parsed, err := strconv.ParseUint(port, 10, 16)
+		if err != nil || parsed == 0 {
+			return "", errors.New("PORT must be a valid TCP port")
+		}
+		return ":" + strconv.FormatUint(parsed, 10), nil
+	}
+
+	if addr := strings.TrimSpace(getenv("LISTEN_ADDR")); addr != "" {
+		return addr, nil
+	}
+	return defaultListenAddr, nil
 }
 
 // isLoopbackListenAddr reports whether the server binds a loopback address.
