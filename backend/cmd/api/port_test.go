@@ -1,11 +1,6 @@
 package main
 
-import (
-	"net/http"
-	"net/http/httptest"
-	"sync"
-	"testing"
-)
+import "testing"
 
 func TestConfiguredListenAddr(t *testing.T) {
 	tests := []struct {
@@ -37,28 +32,5 @@ func TestConfiguredListenAddr(t *testing.T) {
 				t.Fatalf("configuredListenAddr() = %q, want %q", got, test.want)
 			}
 		})
-	}
-}
-
-func TestVercelHandlerExposesHealthWithoutAuthConfig(t *testing.T) {
-	t.Setenv("AUTH0_ISSUER", "")
-	t.Setenv("AUTH0_AUDIENCE", "")
-	t.Setenv("DATABASE_URL", "")
-
-	vercelHandlerOnce = sync.Once{}
-	vercelHandler = nil
-	vercelHandlerErr = nil
-	t.Cleanup(func() {
-		vercelHandlerOnce = sync.Once{}
-		vercelHandler = nil
-		vercelHandlerErr = nil
-	})
-
-	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/health", nil)
-	Handler(recorder, request)
-
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("Handler(/health) status = %d, want %d; body = %s", recorder.Code, http.StatusOK, recorder.Body.String())
 	}
 }

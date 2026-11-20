@@ -16,63 +16,31 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
+	"energyhub-universal/backend/internal/apiapp"
 	"energyhub-universal/backend/internal/authn"
-	"energyhub-universal/backend/internal/platform/httpapi"
-	"energyhub-universal/backend/internal/site"
-	"energyhub-universal/backend/internal/storage/postgres"
 )
 
 var (
-	ErrIncompleteAuthConfig     = errors.New("authentication configuration is incomplete")
-	ErrIncompleteDatabaseConfig = errors.New("database configuration is incomplete")
+	ErrIncompleteAuthConfig     = apiapp.ErrIncompleteAuthConfig
+	ErrIncompleteDatabaseConfig = apiapp.ErrIncompleteDatabaseConfig
 )
 
 const (
-	defaultListenAddr  = ":8080"
-	startupPingTimeout = 5 * time.Second
-	shutdownTimeout    = 5 * time.Second
-	readTimeout        = 15 * time.Second
-	writeTimeout       = 30 * time.Second
-	idleTimeout        = 60 * time.Second
-	maxHeaderBytes     = 8 << 10
+	defaultListenAddr = ":8080"
+	shutdownTimeout   = 5 * time.Second
+	readTimeout       = 15 * time.Second
+	writeTimeout      = 30 * time.Second
+	idleTimeout       = 60 * time.Second
+	maxHeaderBytes    = 8 << 10
 )
 
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-var (
-	vercelHandlerOnce sync.Once
-	vercelHandler     http.Handler
-	vercelHandlerErr  error
-)
-
-// Handler is the Vercel Go runtime entry point. The standalone run function
-// remains available for local development and container deployments.
-func Handler(w http.ResponseWriter, r *http.Request) {
-	vercelHandlerOnce.Do(func() {
-		config, err := loadAPIConfig(os.Getenv)
-		if err != nil {
-			vercelHandlerErr = err
-			return
-		}
-		vercelHandler, _, vercelHandlerErr = buildRouter(context.Background(), config)
-	})
-
-	if vercelHandlerErr != nil {
-		log.Printf("initialize API handler: %v", vercelHandlerErr)
-		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
-		return
-	}
-	vercelHandler.ServeHTTP(w, r)
 }
 
 type apiConfig struct {
@@ -88,33 +56,11 @@ func (c apiConfig) authenticationEnabled() bool {
 // database are configured together: one without the other is a mistake, not a
 // degraded mode.
 func loadAPIConfig(getenv func(string) string) (apiConfig, error) {
-	if getenv == nil {
-		return apiConfig{}, errors.New("environment reader is required")
-	}
-
-	issuer := strings.TrimSpace(getenv("AUTH0_ISSUER"))
-	audience := strings.TrimSpace(getenv("AUTH0_AUDIENCE"))
-	databaseURL := strings.TrimSpace(getenv("DATABASE_URL"))
-
-	switch {
-	case issuer == "" && audience == "":
-		if databaseURL != "" {
-			return apiConfig{}, fmt.Errorf("%w: set AUTH0_ISSUER and AUTH0_AUDIENCE to enable the database", ErrIncompleteAuthConfig)
-		}
-		return apiConfig{}, nil
-	case issuer == "" || audience == "":
-		return apiConfig{}, fmt.Errorf("%w: set both AUTH0_ISSUER and AUTH0_AUDIENCE", ErrIncompleteAuthConfig)
-	}
-
-	auth := authn.Auth0Config{Issuer: issuer, Audience: audience}
-	if err := auth.Validate(); err != nil {
+	config, err := apiapp.LoadConfig(getenv)
+	if err != nil {
 		return apiConfig{}, err
 	}
-	if databaseURL == "" {
-		return apiConfig{}, fmt.Errorf("%w: set DATABASE_URL to read memberships", ErrIncompleteDatabaseConfig)
-	}
-
-	return apiConfig{auth: auth, databaseURL: databaseURL}, nil
+	return apiConfig{auth: config.Auth, databaseURL: config.DatabaseURL}, nil
 }
 
 func run() error {
@@ -204,50 +150,5 @@ func isLoopbackListenAddr(addr string) bool {
 // resources it owns. The database pool stays open for the lifetime of the
 // server, so it is not closed here.
 func buildRouter(ctx context.Context, config apiConfig) (http.Handler, func(), error) {
-	if !config.authenticationEnabled() {
-		log.Printf("authentication is not configured: only /health is exposed")
-		return httpapi.NewRouter(), func() {}, nil
-	}
-
-	pool, err := pgxpool.New(ctx, config.databaseURL)
-	if err != nil {
-		return nil, func() {}, fmt.Errorf("connect database: %w", postgres.RedactConnectionError(err, config.databaseURL))
-	}
-	cleanup := func() { pool.Close() }
-
-	pingContext, cancel := context.WithTimeout(ctx, startupPingTimeout)
-	defer cancel()
-	if err := pool.Ping(pingContext); err != nil {
-		cleanup()
-		return nil, func() {}, fmt.Errorf("ping database: %w", postgres.RedactConnectionError(err, config.databaseURL))
-	}
-
-	// The API must connect with the read only runtime role. A credential that
-	// is a superuser, that bypasses row level security or that can write the
-	// membership tables would read or change every tenant.
-	//
-	// The inspection has its own deadline: a database that does not answer
-	// must stop the startup instead of leaving the process waiting forever.
-	roleVerifier := postgres.NewRuntimeRoleVerifier(postgres.NewPgxRoleInspector(pool))
-	roleContext, cancelRole := context.WithTimeout(ctx, startupPingTimeout)
-	defer cancelRole()
-	if err := roleVerifier.VerifyRuntimeRole(roleContext); err != nil {
-		cleanup()
-		return nil, func() {}, fmt.Errorf("verify database role: %w", err)
-	}
-
-	verifier, err := authn.NewAuth0Verifier(ctx, config.auth, nil)
-	if err != nil {
-		cleanup()
-		return nil, func() {}, fmt.Errorf("create auth verifier: %w", err)
-	}
-
-	reader := postgres.NewMembershipReader(postgres.NewDB(pool))
-	siteService := site.NewService(postgres.NewSiteReader(postgres.NewDB(pool)))
-	log.Printf("protected routes enabled for issuer %s", config.auth.Issuer)
-
-	return httpapi.NewRouter(
-		httpapi.WithAuthentication(verifier, reader),
-		httpapi.WithSites(siteService),
-	), cleanup, nil
+	return apiapp.BuildRouter(ctx, apiapp.Config{Auth: config.auth, DatabaseURL: config.databaseURL})
 }
