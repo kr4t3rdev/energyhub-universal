@@ -44,8 +44,14 @@ func TestRedactConnectionErrorWithoutAPassword(t *testing.T) {
 
 	err := RedactConnectionError(original, databaseURL)
 
-	if err == nil || err.Error() != original.Error() {
-		t.Fatalf("err = %v, want the original message", err)
+	if err == nil {
+		t.Fatal("err = nil, want a redacted error")
+	}
+	if strings.Contains(err.Error(), original.Error()) {
+		t.Fatalf("error still holds the raw message: %q", err.Error())
+	}
+	if err.Error() != "database connection failed: unable to redact credentials" {
+		t.Fatalf("err = %v, want a generic redacted message", err)
 	}
 }
 
@@ -60,7 +66,13 @@ func TestRedactConnectionErrorHandlesAMalformedURL(t *testing.T) {
 
 	err := RedactConnectionError(original, "://not a url")
 
-	if err == nil || err.Error() != original.Error() {
-		t.Fatalf("err = %v, want the original message", err)
+	if err == nil {
+		t.Fatal("err = nil, want a redacted error")
+	}
+	if strings.Contains(err.Error(), original.Error()) {
+		t.Fatalf("error still holds the raw message: %q", err.Error())
+	}
+	if err.Error() != "database connection failed: unable to redact credentials" {
+		t.Fatalf("err = %v, want a generic redacted message", err)
 	}
 }

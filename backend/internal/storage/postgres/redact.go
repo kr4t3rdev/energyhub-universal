@@ -19,7 +19,11 @@ func RedactConnectionError(err error, databaseURL string) error {
 	}
 	password := connectionPassword(databaseURL)
 	if password == "" {
-		return err
+		// No se pudo extraer la contraseña (URL malformada o formato
+		// clave=valor de libpq que url.Parse no entiende). No se devuelve el
+		// error crudo: podría contener la contraseña y terminar en los logs de
+		// arranque.
+		return errors.New("database connection failed: unable to redact credentials")
 	}
 	return errors.New(strings.ReplaceAll(err.Error(), password, RedactedPassword))
 }
