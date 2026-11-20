@@ -119,10 +119,13 @@ func TestIntegrationRuntimeRoleVerifierRejectsSetOnlyOwnerMembership(t *testing.
 	}
 }
 
-// TestIntegrationRuntimeRoleVerifierRejectsSharedCredential proves that a
-// login role that can assume the runtime credential is rejected. Such a role
-// would read every tenant, because the read isolation trusts a session
-// variable that the holder of the credential can set.
+// TestIntegrationRuntimeRoleVerifierRejectsSharedCredential proves that the
+// credential the API uses is rejected when another login role can assume it.
+//
+// The check walks the membership graph backwards, so it is the authenticated
+// role that must not be held by a second login role. A second login role would
+// read every tenant, because the read isolation trusts a session variable that
+// the holder of the credential can set.
 func TestIntegrationRuntimeRoleVerifierRejectsSharedCredential(t *testing.T) {
 	superuserURL := integrationSuperuserURL(t)
 
@@ -132,14 +135,15 @@ func TestIntegrationRuntimeRoleVerifierRejectsSharedCredential(t *testing.T) {
 	superuserPool := connect(t, superuserURL)
 	defer superuserPool.Close()
 
-	// Create a shared credential: a login role that inherits the runtime role.
-	sharedRuntimeRole := createEphemeralRole(t, ctx, superuserURL, "energyhub_it_shared_runtime", integrationRuntimeRole)
+	// A second login role that can take the credential of the API. The grant
+	// is on the role the API authenticates as, which is the ephemeral role the
+	// environment created for it.
+	sharedRole := createEphemeralRole(t, ctx, superuserURL, "energyhub_it_sharer", environment.runtimeRole)
 
-	// The verifier must reject the shared credential.
-	sharedPool := connect(t, withCredentials(superuserURL, sharedRuntimeRole, integrationPassword, environment.databaseName))
-	defer sharedPool.Close()
+	runtimePool := connect(t, environment.runtimeURL)
+	defer runtimePool.Close()
 
-	verifier := NewRuntimeRoleVerifier(NewPgxRoleInspector(sharedPool))
+	verifier := NewRuntimeRoleVerifier(NewPgxRoleInspector(runtimePool))
 	err := verifier.VerifyRuntimeRole(ctx)
 	if err == nil {
 		t.Fatal("err = nil, want the shared credential to be rejected")
@@ -148,23 +152,29 @@ func TestIntegrationRuntimeRoleVerifierRejectsSharedCredential(t *testing.T) {
 		t.Fatalf("err = %v, want ErrRuntimeRoleSharedCredential", err)
 	}
 
-	// The shared credential can read the tenant tables (no RLS bypass needed),
-	// but cannot write directly.
-	var canSelect bool
-	if err := sharedPool.QueryRow(ctx,
-		"SELECT has_table_privilege(current_user, 'public.organizations', 'SELECT')").Scan(&canSelect); err != nil {
-		t.Fatalf("read the select privilege: %v", err)
+	// The share is real: the login role can take the credential of the API and
+	// read the tenant tables with it.
+	sharedPool := connect(t, withCredentials(superuserURL, sharedRole, integrationPassword, environment.databaseName))
+	defer sharedPool.Close()
+	if _, err := sharedPool.Exec(ctx, "SET ROLE "+environment.runtimeRole); err != nil {
+		t.Fatalf("take the credential of the API: %v", err)
 	}
-	if !canSelect {
-		t.Fatal("the shared credential cannot read the tenant tables")
+	var canRead bool
+	if err := sharedPool.QueryRow(ctx,
+		"SELECT has_table_privilege(current_user, 'public.organizations', 'SELECT')").Scan(&canRead); err != nil {
+		t.Fatalf("read the privilege of the shared credential: %v", err)
+	}
+	if !canRead {
+		t.Fatal("the shared role cannot read the tenant tables with the credential of the API")
 	}
 
-	// Clean up: revoke and drop.
-	if _, err := superuserPool.Exec(ctx, "REVOKE "+integrationRuntimeRole+" FROM "+sharedRuntimeRole); err != nil {
-		t.Fatalf("revoke the runtime role from the shared credential: %v", err)
+	// Removing the membership makes the deployment acceptable again, so the
+	// check is about the share and not about the role itself.
+	if _, err := superuserPool.Exec(ctx, "REVOKE "+environment.runtimeRole+" FROM "+sharedRole); err != nil {
+		t.Fatalf("revoke the shared role: %v", err)
 	}
-	if _, err := superuserPool.Exec(ctx, "DROP ROLE IF EXISTS "+sharedRuntimeRole); err != nil {
-		t.Fatalf("drop the shared credential: %v", err)
+	if err := verifier.VerifyRuntimeRole(ctx); err != nil {
+		t.Fatalf("verify after removing the share: %v", err)
 	}
 }
 
