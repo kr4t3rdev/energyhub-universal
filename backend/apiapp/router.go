@@ -21,7 +21,7 @@ const startupPingTimeout = 5 * time.Second
 func BuildRouter(ctx context.Context, config Config) (http.Handler, func(), error) {
 	if !config.AuthenticationEnabled() {
 		log.Printf("authentication is not configured: only /health is exposed")
-		return httpapi.NewRouter(), func() {}, nil
+		return httpapi.NewRouter(httpapi.WithCORS(config.CORSAllowedOrigin)), func() {}, nil
 	}
 
 	pool, err := pgxpool.New(ctx, config.DatabaseURL)
@@ -56,6 +56,7 @@ func BuildRouter(ctx context.Context, config Config) (http.Handler, func(), erro
 	log.Printf("protected routes enabled for issuer %s", config.Auth.Issuer)
 
 	return httpapi.NewRouter(
+		httpapi.WithCORS(config.CORSAllowedOrigin),
 		httpapi.WithAuthentication(verifier, reader),
 		httpapi.WithSites(siteService),
 	), cleanup, nil

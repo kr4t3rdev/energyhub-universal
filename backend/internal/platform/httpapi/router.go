@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -14,6 +15,7 @@ type routerOptions struct {
 	verifier    authn.Verifier
 	memberships authz.MembershipReader
 	sites       *site.Service
+	corsOrigin  string
 }
 
 // Option configures the router.
@@ -38,6 +40,14 @@ func WithAuthentication(verifier authn.Verifier, memberships authz.MembershipRea
 	}
 }
 
+// WithCORS allows browser requests from one exact origin. Empty origins leave
+// CORS disabled; origin validation belongs to the deployment configuration.
+func WithCORS(origin string) Option {
+	return func(options *routerOptions) {
+		options.corsOrigin = origin
+	}
+}
+
 func NewRouter(options ...Option) http.Handler {
 	settings := routerOptions{}
 	for _, option := range options {
@@ -48,6 +58,7 @@ func NewRouter(options ...Option) http.Handler {
 
 	r := chi.NewRouter()
 	r.Use(RequestIDMiddleware)
+	r.Use(corsMiddleware(settings.corsOrigin))
 	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
@@ -80,9 +91,74 @@ func NewRouter(options ...Option) http.Handler {
 func privateResponseHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Cache-Control", "no-store")
-		writer.Header().Set("Vary", "Authorization")
+		addVary(writer.Header(), "Authorization")
 		next.ServeHTTP(writer, request)
 	})
+}
+
+func corsMiddleware(allowedOrigin string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			if allowedOrigin == "" {
+				next.ServeHTTP(writer, request)
+				return
+			}
+
+			addVary(writer.Header(), "Origin")
+			origin := request.Header.Get("Origin")
+			isAllowedOrigin := origin != "" && origin == allowedOrigin
+			if isAllowedOrigin {
+				writer.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+			}
+
+			requestedMethod := request.Header.Get("Access-Control-Request-Method")
+			if request.Method != http.MethodOptions || requestedMethod == "" {
+				next.ServeHTTP(writer, request)
+				return
+			}
+
+			if !isAllowedOrigin || !corsMethodAllowed(requestedMethod) || !corsHeadersAllowed(request.Header.Get("Access-Control-Request-Headers")) {
+				writer.WriteHeader(http.StatusForbidden)
+				return
+			}
+
+			writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+			writer.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization")
+			writer.WriteHeader(http.StatusNoContent)
+		})
+	}
+}
+
+func corsMethodAllowed(method string) bool {
+	return method == http.MethodGet || method == http.MethodOptions
+}
+
+func corsHeadersAllowed(headers string) bool {
+	for _, header := range strings.Split(headers, ",") {
+		switch strings.ToLower(strings.TrimSpace(header)) {
+		case "", "accept", "authorization":
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func addVary(headers http.Header, value string) {
+	for _, field := range headers.Values("Vary") {
+		for _, item := range strings.Split(field, ",") {
+			item = strings.TrimSpace(item)
+			if item == "*" || strings.EqualFold(item, value) {
+				return
+			}
+		}
+	}
+	values := headers.Values("Vary")
+	if len(values) == 0 {
+		headers.Set("Vary", value)
+		return
+	}
+	headers.Set("Vary", strings.Join(append(values, value), ", "))
 }
 
 // authenticationErrorResponder keeps the error envelope consistent with the

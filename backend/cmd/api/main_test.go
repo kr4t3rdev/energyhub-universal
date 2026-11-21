@@ -132,6 +132,8 @@ func TestAPIConfigTrimsValues(t *testing.T) {
 			return "  https://api.energyhub.example  "
 		case "DATABASE_URL":
 			return "  postgres://runtime@127.0.0.1:5432/energyhub  "
+		case "CORS_ALLOWED_ORIGIN":
+			return "  https://energyhub.kr4t3rdev.xyz  "
 		}
 		return ""
 	})
@@ -143,6 +145,9 @@ func TestAPIConfigTrimsValues(t *testing.T) {
 	}
 	if strings.TrimSpace(loaded.databaseURL) != loaded.databaseURL {
 		t.Fatalf("database URL = %q, want trimmed", loaded.databaseURL)
+	}
+	if loaded.corsAllowedOrigin != "https://energyhub.kr4t3rdev.xyz" {
+		t.Fatalf("CORS allowed origin = %q, want trimmed origin", loaded.corsAllowedOrigin)
 	}
 }
 

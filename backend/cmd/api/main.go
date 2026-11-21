@@ -44,8 +44,9 @@ func main() {
 }
 
 type apiConfig struct {
-	auth        authn.Auth0Config
-	databaseURL string
+	auth              authn.Auth0Config
+	databaseURL       string
+	corsAllowedOrigin string
 }
 
 func (c apiConfig) authenticationEnabled() bool {
@@ -60,7 +61,7 @@ func loadAPIConfig(getenv func(string) string) (apiConfig, error) {
 	if err != nil {
 		return apiConfig{}, err
 	}
-	return apiConfig{auth: config.Auth, databaseURL: config.DatabaseURL}, nil
+	return apiConfig{auth: config.Auth, databaseURL: config.DatabaseURL, corsAllowedOrigin: config.CORSAllowedOrigin}, nil
 }
 
 func run() error {
@@ -150,5 +151,5 @@ func isLoopbackListenAddr(addr string) bool {
 // resources it owns. The database pool stays open for the lifetime of the
 // server, so it is not closed here.
 func buildRouter(ctx context.Context, config apiConfig) (http.Handler, func(), error) {
-	return apiapp.BuildRouter(ctx, apiapp.Config{Auth: config.auth, DatabaseURL: config.databaseURL})
+	return apiapp.BuildRouter(ctx, apiapp.Config{Auth: config.auth, DatabaseURL: config.databaseURL, CORSAllowedOrigin: config.corsAllowedOrigin})
 }
