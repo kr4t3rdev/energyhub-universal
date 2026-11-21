@@ -5,7 +5,8 @@ import { NextResponse } from "next/server";
  * endpoint de autorización. El cliente debe configurar AUTH0_ISSUER,
  * AUTH0_AUDIENCE y NEXT_PUBLIC_AUTH0_CLIENT_ID en las variables de entorno.
  */
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
+  void _request;
   const issuer = process.env.AUTH0_ISSUER;
   const audience = process.env.AUTH0_AUDIENCE;
   const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID;

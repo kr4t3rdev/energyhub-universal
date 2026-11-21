@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 /**
  * Componente que muestra un botón de "Iniciar sesión" cuando no hay token,
@@ -9,17 +10,23 @@ import { useEffect, useState } from "react";
  * El token se lee de localStorage (clave: energyhub_token).
  */
 export function AuthButton() {
+  const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("energyhub_token");
-    const expiresAt = localStorage.getItem("energyhub_expires_at");
+    const checkAuth = () => {
+      const token = localStorage.getItem("energyhub_token");
+      const expiresAt = localStorage.getItem("energyhub_expires_at");
+      setIsAuthenticated(
+        !!token &&
+          !!expiresAt &&
+          Date.now() < parseInt(expiresAt, 10),
+      );
+    };
 
-    setIsAuthenticated(
-      !!token &&
-      !!expiresAt &&
-      Date.now() < parseInt(expiresAt, 10),
-    );
+    checkAuth();
+    window.addEventListener("storage", checkAuth);
+    return () => window.removeEventListener("storage", checkAuth);
   }, []);
 
   const handleLogin = () => {
@@ -28,7 +35,7 @@ export function AuthButton() {
       console.error("NEXT_PUBLIC_AUTH0_CALLBACK_URL no está configurado");
       return;
     }
-    window.location.href = "/api/auth/login";
+    router.push("/api/auth/login");
   };
 
   const handleLogout = () => {
@@ -36,7 +43,7 @@ export function AuthButton() {
     localStorage.removeItem("energyhub_id_token");
     localStorage.removeItem("energyhub_expires_at");
     setIsAuthenticated(false);
-    window.location.reload();
+    router.push("/");
   };
 
   return (
