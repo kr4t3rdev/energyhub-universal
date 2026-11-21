@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { siteOverviewProvider } from "./site/provider";
 import { deviceStatusLabel, formatReading, freshnessLabel, hasDevices } from "./site/presentation";
 import OrganizationsList from "./site/organizations-list";
+import { AuthButton } from "./site/auth-button";
 
 async function SiteMeta({ updatedAt }: { updatedAt: string | null }) {
   await connection();
@@ -31,6 +32,7 @@ export default async function Home() {
           <a href="#dispositivos">Dispositivos</a>
           <a href="#acerca">Acerca de</a>
         </nav>
+        <AuthButton />
         <span className="header-tag"><span className="status-dot" /> MODO DEMO</span>
       </header>
 
