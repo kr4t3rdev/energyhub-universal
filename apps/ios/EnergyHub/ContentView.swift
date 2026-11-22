@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     let site: SiteOverview
 
+    @StateObject private var authSession = Auth0Session()
     @State private var organizations: [Organization] = []
     @State private var isLoadingOrganizations = true
     @State private var organizationsError: String? = nil
@@ -104,22 +105,38 @@ struct ContentView: View {
                         .font(.title2)
                         .fontWeight(.bold)
 
-                    if isLoadingOrganizations {
+                    if !authSession.isConfigured {
+                        Text("Auth0 no está configurado para esta app.")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    } else if authSession.accessToken == nil {
+                        Button("Iniciar sesión") {
+                            Task {
+                                await authSession.login()
+                                if authSession.accessToken != nil {
+                                    await loadOrganizations()
+                                }
+                            }
+                        }
+                        .disabled(authSession.isLoading)
+                        if authSession.isLoading {
+                            ProgressView("Conectando con Auth0…")
+                        }
+                        if let error = authSession.errorMessage {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+                    } else if isLoadingOrganizations {
                         ProgressView("Cargando...")
                     } else if let error = organizationsError {
                         Text(error)
                             .font(.caption)
                             .foregroundStyle(.red)
                     } else if organizations.isEmpty {
-                        if isApiConfigured() {
-                            Text("No tienes organizaciones asignadas.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("La API no está configurada. Agrega APIBaseURL al Info.plist y obtén un token de autenticación para ver tus organizaciones reales.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                        Text("No tienes organizaciones asignadas.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     } else {
                         ForEach(organizations, id: \.id) { org in
                             VStack(alignment: .leading, spacing: 4) {
@@ -134,6 +151,16 @@ struct ContentView: View {
                             .cornerRadius(12)
                         }
                     }
+
+                    if authSession.accessToken != nil {
+                        Button("Cerrar sesión") {
+                            Task {
+                                await authSession.logout()
+                                organizations = []
+                            }
+                        }
+                        .disabled(authSession.isLoading)
+                    }
                 }
 
                 Text("© EnergyHub Universal — PROYECTO EN DESARROLLO")
@@ -143,7 +170,12 @@ struct ContentView: View {
             .padding()
         }
         .task {
-            await loadOrganizations()
+            await authSession.restoreSession()
+            if authSession.accessToken != nil {
+                await loadOrganizations()
+            } else {
+                isLoadingOrganizations = false
+            }
         }
     }
 
@@ -152,7 +184,10 @@ struct ContentView: View {
         organizationsError = nil
 
         do {
-            let token = UserDefaults.standard.string(forKey: "energyhub_token")
+            guard let token = authSession.accessToken else {
+                organizations = []
+                return
+            }
             let provider = OrganizationApiProvider(authToken: token)
             let orgs = try await provider.getOrganizations()
             self.organizations = orgs

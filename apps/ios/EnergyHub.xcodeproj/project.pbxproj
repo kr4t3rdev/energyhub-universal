@@ -7,15 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0B0948E5FA9C0BE91C652F4F /* Auth0 in Frameworks */ = {isa = PBXBuildFile; productRef = 745E363E37A79BCE25B7A083 /* Auth0 */; };
 		11C29966CEC8C446746A2335 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67278AF149733F73EFA91B59 /* ContentView.swift */; };
+		26CD809BEE6780EA7737EDD8 /* Auth0Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE974EED7ED4B610C560247E /* Auth0Session.swift */; };
 		290E44F9F8DB85D3522A5D18 /* SiteOverview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 102F63D3D6A170B9B6A0EFC8 /* SiteOverview.swift */; };
+		2A0D2436698C6E912E027BB8 /* Organization.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C54BD114B8D860F11242C2 /* Organization.swift */; };
 		4CDACE02A75BFAC79C110628 /* EnergyHubApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 445772D7D341473D460990D3 /* EnergyHubApp.swift */; };
+		5DEE8B5AE9D869366FCE0253 /* Auth0ConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D557288F7E5465BC11CB7C16 /* Auth0ConfigurationTests.swift */; };
+		6FC6A021B4B5DD38B86190E3 /* OrganizationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931526933073355A1D510966 /* OrganizationProvider.swift */; };
 		7DFC1983424C68E8D11F0CB3 /* SitePresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 963F83A81A49FCA48F7F3611 /* SitePresentationTests.swift */; };
+		9410F2E0F5EF18304A26742B /* Auth0Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FC13CA34A7A2FA755CCA3E4 /* Auth0Configuration.swift */; };
 		9A7B9006F696667996228151 /* SitePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4D0447EFA866402EC175B77 /* SitePresentation.swift */; };
+		BE33D0D0009159AAFE71017C /* ApiClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15ECE5E3B1DC0B12980A7443 /* ApiClient.swift */; };
 		D08AD38771C8454A2C009CD8 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFAF0F062650581075862C5F /* SmokeTests.swift */; };
-		D4E5F6789012345678901234 /* ApiClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6789012345678 /* ApiClient.swift */; };
-		E5F678901234567890123456 /* Organization.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F678901234567890 /* Organization.swift */; };
-		F67890123456789012345678 /* OrganizationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F67890123456789012 /* OrganizationProvider.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,18 +33,33 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0F0ED56F1FF9CAED2C7CA8BE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		102F63D3D6A170B9B6A0EFC8 /* SiteOverview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteOverview.swift; sourceTree = "<group>"; };
+		15ECE5E3B1DC0B12980A7443 /* ApiClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiClient.swift; sourceTree = "<group>"; };
+		2FC13CA34A7A2FA755CCA3E4 /* Auth0Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Auth0Configuration.swift; sourceTree = "<group>"; };
 		441F295878920599BC7A8BD6 /* EnergyHubTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = EnergyHubTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		445772D7D341473D460990D3 /* EnergyHubApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnergyHubApp.swift; sourceTree = "<group>"; };
 		67278AF149733F73EFA91B59 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		92794C726A6C31BE4078CFB1 /* EnergyHub.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = EnergyHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		931526933073355A1D510966 /* OrganizationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganizationProvider.swift; sourceTree = "<group>"; };
 		963F83A81A49FCA48F7F3611 /* SitePresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SitePresentationTests.swift; sourceTree = "<group>"; };
+		AE974EED7ED4B610C560247E /* Auth0Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Auth0Session.swift; sourceTree = "<group>"; };
 		AFAF0F062650581075862C5F /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
 		D4D0447EFA866402EC175B77 /* SitePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SitePresentation.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6789012345678 /* ApiClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiClient.swift; sourceTree = "<group>"; };
-		B2C3D4E5F678901234567890 /* Organization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Organization.swift; sourceTree = "<group>"; };
-		C3D4E5F67890123456789012 /* OrganizationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganizationProvider.swift; sourceTree = "<group>"; };
+		D557288F7E5465BC11CB7C16 /* Auth0ConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Auth0ConfigurationTests.swift; sourceTree = "<group>"; };
+		F4C54BD114B8D860F11242C2 /* Organization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Organization.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		9EE7AC586968FA3C401143C0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0B0948E5FA9C0BE91C652F4F /* Auth0 in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		2047E7D61A6331F1111DB307 /* Products */ = {
@@ -55,6 +74,7 @@
 		27E93C22A48E829476C172FC /* EnergyHubTests */ = {
 			isa = PBXGroup;
 			children = (
+				D557288F7E5465BC11CB7C16 /* Auth0ConfigurationTests.swift */,
 				963F83A81A49FCA48F7F3611 /* SitePresentationTests.swift */,
 				AFAF0F062650581075862C5F /* SmokeTests.swift */,
 			);
@@ -66,6 +86,7 @@
 			children = (
 				67278AF149733F73EFA91B59 /* ContentView.swift */,
 				445772D7D341473D460990D3 /* EnergyHubApp.swift */,
+				0F0ED56F1FF9CAED2C7CA8BE /* Info.plist */,
 				55F85946D30B30B0389F67E8 /* Site */,
 			);
 			path = EnergyHub;
@@ -74,10 +95,12 @@
 		55F85946D30B30B0389F67E8 /* Site */ = {
 			isa = PBXGroup;
 			children = (
+				15ECE5E3B1DC0B12980A7443 /* ApiClient.swift */,
+				2FC13CA34A7A2FA755CCA3E4 /* Auth0Configuration.swift */,
+				AE974EED7ED4B610C560247E /* Auth0Session.swift */,
+				F4C54BD114B8D860F11242C2 /* Organization.swift */,
+				931526933073355A1D510966 /* OrganizationProvider.swift */,
 				102F63D3D6A170B9B6A0EFC8 /* SiteOverview.swift */,
-				A1B2C3D4E5F6789012345678 /* ApiClient.swift */,
-				B2C3D4E5F678901234567890 /* Organization.swift */,
-				C3D4E5F67890123456789012 /* OrganizationProvider.swift */,
 				D4D0447EFA866402EC175B77 /* SitePresentation.swift */,
 			);
 			path = Site;
@@ -100,6 +123,7 @@
 			buildConfigurationList = 8B7875854B8F37365F218C96 /* Build configuration list for PBXNativeTarget "EnergyHub" */;
 			buildPhases = (
 				33361269C0D83BF66777A8F0 /* Sources */,
+				9EE7AC586968FA3C401143C0 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -107,6 +131,7 @@
 			);
 			name = EnergyHub;
 			packageProductDependencies = (
+				745E363E37A79BCE25B7A083 /* Auth0 */,
 			);
 			productName = EnergyHub;
 			productReference = 92794C726A6C31BE4078CFB1 /* EnergyHub.app */;
@@ -150,6 +175,9 @@
 			);
 			mainGroup = FD7EAECBCF7D847F5F27EA6D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				65410E2C747580116B875814 /* XCRemoteSwiftPackageReference "Auth0.swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2047E7D61A6331F1111DB307 /* Products */;
 			projectDirPath = "";
@@ -166,12 +194,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BE33D0D0009159AAFE71017C /* ApiClient.swift in Sources */,
+				9410F2E0F5EF18304A26742B /* Auth0Configuration.swift in Sources */,
+				26CD809BEE6780EA7737EDD8 /* Auth0Session.swift in Sources */,
 				11C29966CEC8C446746A2335 /* ContentView.swift in Sources */,
 				4CDACE02A75BFAC79C110628 /* EnergyHubApp.swift in Sources */,
+				2A0D2436698C6E912E027BB8 /* Organization.swift in Sources */,
+				6FC6A021B4B5DD38B86190E3 /* OrganizationProvider.swift in Sources */,
 				290E44F9F8DB85D3522A5D18 /* SiteOverview.swift in Sources */,
-				D4E5F6789012345678901234 /* ApiClient.swift in Sources */,
-				E5F678901234567890123456 /* Organization.swift in Sources */,
-				F67890123456789012345678 /* OrganizationProvider.swift in Sources */,
 				9A7B9006F696667996228151 /* SitePresentation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -180,6 +210,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5DEE8B5AE9D869366FCE0253 /* Auth0ConfigurationTests.swift in Sources */,
 				7DFC1983424C68E8D11F0CB3 /* SitePresentationTests.swift in Sources */,
 				D08AD38771C8454A2C009CD8 /* SmokeTests.swift in Sources */,
 			);
@@ -202,6 +233,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EnergyHub/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -355,6 +387,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EnergyHub/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -414,6 +447,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		65410E2C747580116B875814 /* XCRemoteSwiftPackageReference "Auth0.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/auth0/Auth0.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.3.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		745E363E37A79BCE25B7A083 /* Auth0 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 65410E2C747580116B875814 /* XCRemoteSwiftPackageReference "Auth0.swift" */;
+			productName = Auth0;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 57804C69B53C00FE8E42C4DB /* Project object */;
 }
