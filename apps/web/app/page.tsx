@@ -32,8 +32,8 @@ export default async function Home() {
           <a href="#dispositivos">Dispositivos</a>
           <a href="#acerca">Acerca de</a>
         </nav>
-        <AuthButton />
         <span className="header-tag"><span className="status-dot" /> MODO DEMO</span>
+        <AuthButton />
       </header>
 
       <main id="contenido">
