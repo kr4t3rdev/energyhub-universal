@@ -40,7 +40,7 @@
 		441F295878920599BC7A8BD6 /* EnergyHubTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = EnergyHubTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		445772D7D341473D460990D3 /* EnergyHubApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnergyHubApp.swift; sourceTree = "<group>"; };
 		67278AF149733F73EFA91B59 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		92794C726A6C31BE4078CFB1 /* EnergyHub.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = EnergyHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		92794C726A6C31BE4078CFB1 /* EnergyHub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EnergyHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		931526933073355A1D510966 /* OrganizationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganizationProvider.swift; sourceTree = "<group>"; };
 		963F83A81A49FCA48F7F3611 /* SitePresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SitePresentationTests.swift; sourceTree = "<group>"; };
 		AE974EED7ED4B610C560247E /* Auth0Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Auth0Session.swift; sourceTree = "<group>"; };
@@ -163,8 +163,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
-				TargetAttributes = {
-				};
 			};
 			buildConfigurationList = A2487D0F74AC7FFBEB256966 /* Build configuration list for PBXProject "EnergyHub" */;
 			developmentRegion = en;
@@ -176,7 +174,7 @@
 			mainGroup = FD7EAECBCF7D847F5F27EA6D;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				65410E2C747580116B875814 /* XCRemoteSwiftPackageReference "Auth0.swift" */,
+				65410E2C747580116B875814 /* XCRemoteSwiftPackageReference "Auth0" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2047E7D61A6331F1111DB307 /* Products */;
@@ -231,7 +229,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = DB2RD9ASP5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EnergyHub/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -239,6 +239,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.energyhub.universal;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -449,7 +450,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		65410E2C747580116B875814 /* XCRemoteSwiftPackageReference "Auth0.swift" */ = {
+		65410E2C747580116B875814 /* XCRemoteSwiftPackageReference "Auth0" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/auth0/Auth0.swift";
 			requirement = {
@@ -462,7 +463,7 @@
 /* Begin XCSwiftPackageProductDependency section */
 		745E363E37A79BCE25B7A083 /* Auth0 */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 65410E2C747580116B875814 /* XCRemoteSwiftPackageReference "Auth0.swift" */;
+			package = 65410E2C747580116B875814 /* XCRemoteSwiftPackageReference "Auth0" */;
 			productName = Auth0;
 		};
 /* End XCSwiftPackageProductDependency section */
