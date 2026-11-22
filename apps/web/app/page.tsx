@@ -4,6 +4,7 @@ import { siteOverviewProvider } from "./site/provider";
 import { deviceStatusLabel, formatReading, freshnessLabel, hasDevices } from "./site/presentation";
 import OrganizationsList from "./site/organizations-list";
 import { AuthButton } from "./site/auth-button";
+import { ThemeToggle } from "./site/theme-toggle";
 
 async function SiteMeta({ updatedAt }: { updatedAt: string | null }) {
   await connection();
@@ -33,6 +34,7 @@ export default async function Home() {
           <a href="#acerca">Acerca de</a>
         </nav>
         <span className="header-tag"><span className="status-dot" /> MODO DEMO</span>
+        <ThemeToggle />
         <AuthButton />
       </header>
 
