@@ -118,21 +118,76 @@ SELECT
           JOIN pg_roles AS candidate ON candidate.oid = reachable.role_oid
          WHERE candidate.rolname::text = ANY (` + privilegedRoles + `)
     ),
+    -- Tenant roles need USAGE on app for RLS helpers; reject CREATE and
+    -- direct access to administrative tables or SECURITY DEFINER functions.
     EXISTS (
         SELECT 1
           FROM reachable
           JOIN pg_roles AS candidate ON candidate.oid = reachable.role_oid
          WHERE candidate.rolsuper OR candidate.rolbypassrls
     ),
-    (to_regnamespace('app') IS NOT NULL
-     AND (has_schema_privilege(session_user, 'app', 'USAGE')
-          OR has_schema_privilege(session_user, 'app', 'CREATE')))
+    EXISTS (
+        SELECT 1
+          FROM reachable
+          JOIN pg_roles AS candidate ON candidate.oid = reachable.role_oid
+         WHERE to_regnamespace('app') IS NOT NULL
+           AND has_schema_privilege(candidate.rolname, 'app', 'CREATE')
+    )
     OR EXISTS (
         SELECT 1
-          FROM unnest(` + protectedTables + `) AS protected(table_name)
+          FROM pg_class AS administrative_object
+          JOIN pg_namespace AS administrative_schema
+            ON administrative_schema.oid = administrative_object.relnamespace
+          JOIN reachable ON TRUE
+          JOIN pg_roles AS candidate ON candidate.oid = reachable.role_oid
+          CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']) AS privilege(privilege_name)
+         WHERE administrative_schema.nspname = 'app'
+           AND administrative_object.relkind IN ('r', 'p', 'v', 'm')
+           AND has_table_privilege(candidate.rolname, administrative_object.oid, privilege.privilege_name)
+    )
+    OR EXISTS (
+        SELECT 1
+          FROM pg_class AS administrative_object
+          JOIN pg_namespace AS administrative_schema
+            ON administrative_schema.oid = administrative_object.relnamespace
+          JOIN reachable ON TRUE
+          JOIN pg_roles AS candidate ON candidate.oid = reachable.role_oid
+          CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'REFERENCES']) AS privilege(privilege_name)
+         WHERE administrative_schema.nspname = 'app'
+           AND administrative_object.relkind IN ('r', 'p', 'v', 'm')
+           AND has_any_column_privilege(candidate.rolname, administrative_object.oid, privilege.privilege_name)
+    )
+    OR EXISTS (
+        SELECT 1
+          FROM pg_class AS administrative_sequence
+          JOIN pg_namespace AS administrative_schema
+            ON administrative_schema.oid = administrative_sequence.relnamespace
+          JOIN reachable ON TRUE
+          JOIN pg_roles AS candidate ON candidate.oid = reachable.role_oid
+          CROSS JOIN unnest(ARRAY['USAGE', 'SELECT', 'UPDATE']) AS privilege(privilege_name)
+         WHERE administrative_schema.nspname = 'app'
+           AND administrative_sequence.relkind = 'S'
+           AND has_sequence_privilege(candidate.rolname, administrative_sequence.oid, privilege.privilege_name)
+    )
+    OR EXISTS (
+        SELECT 1
+          FROM pg_proc AS administrative_function
+          JOIN pg_namespace AS administrative_schema
+            ON administrative_schema.oid = administrative_function.pronamespace
+          JOIN reachable ON TRUE
+          JOIN pg_roles AS candidate ON candidate.oid = reachable.role_oid
+         WHERE administrative_schema.nspname = 'app'
+           AND administrative_function.prosecdef
+           AND has_function_privilege(candidate.rolname, administrative_function.oid, 'EXECUTE')
+    )
+    OR EXISTS (
+        SELECT 1
+          FROM reachable
+          JOIN pg_roles AS candidate ON candidate.oid = reachable.role_oid
+          CROSS JOIN unnest(` + protectedTables + `) AS protected(table_name)
           CROSS JOIN unnest(` + mutationPrivileges + `) AS privilege(privilege_name)
          WHERE to_regclass(protected.table_name) IS NOT NULL
-           AND has_table_privilege(session_user, protected.table_name, privilege.privilege_name)
+           AND has_table_privilege(candidate.rolname, protected.table_name, privilege.privilege_name)
     ),
     EXISTS (
         SELECT 1
@@ -188,9 +243,9 @@ func NewRuntimeRoleVerifier(inspector RoleInspector) *RuntimeRoleVerifier {
 // nor bypass row level security, the session must still run as that role, the
 // role must neither hold a mutation privilege on the tenant tables nor be
 // able to assume a privileged one, and no other login role may assume it.
-// The audit trail cannot be inspected directly because the role is not allowed
-// to resolve its name, so the schema access is the control that keeps it out
-// of reach.
+// Tenant roles may use the app schema for row level security helpers, so the
+// verifier checks all reachable roles against administrative table, column,
+// sequence, and SECURITY DEFINER function privileges directly.
 func (v *RuntimeRoleVerifier) VerifyRuntimeRole(ctx context.Context) error {
 	if v == nil || v.inspector == nil {
 		return ErrRuntimeRoleUnknown

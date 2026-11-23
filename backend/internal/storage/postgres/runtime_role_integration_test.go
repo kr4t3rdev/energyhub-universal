@@ -3,7 +3,9 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 )
@@ -117,6 +119,134 @@ func TestIntegrationRuntimeRoleVerifierRejectsSetOnlyOwnerMembership(t *testing.
 	if !isSuperuser {
 		t.Fatal("the owner role does not bypass row level security")
 	}
+}
+
+func TestIntegrationRuntimeRoleVerifierAcceptsTenantSchemaUsage(t *testing.T) {
+	superuserURL := integrationSuperuserURL(t)
+	ctx := context.Background()
+	environment := newIntegrationEnvironment(t, superuserURL)
+	createRuntimeRoleTestOrganization(t, ctx, superuserURL, environment, fmt.Sprintf("runtime-role-test-%d", os.Getpid()))
+
+	runtimePool := connect(t, environment.runtimeURL)
+	defer runtimePool.Close()
+
+	var hasAppUsage bool
+	if err := runtimePool.QueryRow(ctx, "SELECT has_schema_privilege(session_user, 'app', 'USAGE')").Scan(&hasAppUsage); err != nil {
+		t.Fatalf("read the inherited tenant schema privilege: %v", err)
+	}
+	if !hasAppUsage {
+		t.Fatal("the runtime role does not inherit the tenant role's app schema usage")
+	}
+
+	if err := NewRuntimeRoleVerifier(NewPgxRoleInspector(runtimePool)).VerifyRuntimeRole(ctx); err != nil {
+		t.Fatalf("verify the runtime role after tenant-role creation: %v", err)
+	}
+}
+
+func TestIntegrationRuntimeRoleVerifierRejectsAuditReadAccess(t *testing.T) {
+	superuserURL := integrationSuperuserURL(t)
+	ctx := context.Background()
+	environment := newIntegrationEnvironment(t, superuserURL)
+	organizationID := fmt.Sprintf("runtime-role-audit-%d", os.Getpid())
+	tenantRole := createRuntimeRoleTestOrganization(t, ctx, superuserURL, environment, organizationID)
+
+	databasePool := connect(t, withDatabase(superuserURL, environment.databaseName))
+	defer databasePool.Close()
+	var serverVersion int
+	if err := databasePool.QueryRow(ctx, "SELECT current_setting('server_version_num')::int").Scan(&serverVersion); err != nil {
+		t.Fatalf("read the server version: %v", err)
+	}
+	if serverVersion < 160000 {
+		t.Skip("the server does not support separate INHERIT and SET options")
+	}
+	if _, err := databasePool.Exec(ctx,
+		"GRANT "+tenantRole+" TO "+integrationRuntimeRole+" WITH INHERIT FALSE, SET TRUE"); err != nil {
+		t.Fatalf("grant a set-only tenant role: %v", err)
+	}
+	if _, err := databasePool.Exec(ctx, "GRANT SELECT (actor) ON app.admin_audit_log TO "+tenantRole); err != nil {
+		t.Fatalf("grant audit actor-column read access: %v", err)
+	}
+
+	runtimePool := connect(t, environment.runtimeURL)
+	defer runtimePool.Close()
+	err := NewRuntimeRoleVerifier(NewPgxRoleInspector(runtimePool)).VerifyRuntimeRole(ctx)
+	if !errors.Is(err, ErrRuntimeRoleCanWrite) {
+		t.Fatalf("err = %v, want ErrRuntimeRoleCanWrite", err)
+	}
+}
+
+func TestIntegrationRuntimeRoleVerifierRejectsAuditSequenceAccess(t *testing.T) {
+	superuserURL := integrationSuperuserURL(t)
+	ctx := context.Background()
+	environment := newIntegrationEnvironment(t, superuserURL)
+	tenantRole := createRuntimeRoleTestOrganization(
+		t, ctx, superuserURL, environment, fmt.Sprintf("runtime-role-sequence-%d", os.Getpid()),
+	)
+
+	databasePool := connect(t, withDatabase(superuserURL, environment.databaseName))
+	defer databasePool.Close()
+	var sequenceName string
+	if err := databasePool.QueryRow(ctx,
+		"SELECT pg_get_serial_sequence('app.admin_audit_log', 'id')").Scan(&sequenceName); err != nil {
+		t.Fatalf("read the audit sequence name: %v", err)
+	}
+	if sequenceName == "" {
+		t.Fatal("the audit log does not have its expected identity sequence")
+	}
+	if _, err := databasePool.Exec(ctx, "GRANT USAGE ON SEQUENCE "+sequenceName+" TO "+tenantRole); err != nil {
+		t.Fatalf("grant audit sequence access: %v", err)
+	}
+
+	runtimePool := connect(t, environment.runtimeURL)
+	defer runtimePool.Close()
+	err := NewRuntimeRoleVerifier(NewPgxRoleInspector(runtimePool)).VerifyRuntimeRole(ctx)
+	if !errors.Is(err, ErrRuntimeRoleCanWrite) {
+		t.Fatalf("err = %v, want ErrRuntimeRoleCanWrite", err)
+	}
+}
+
+func createRuntimeRoleTestOrganization(
+	t *testing.T,
+	ctx context.Context,
+	superuserURL string,
+	environment integrationEnvironment,
+	organizationID string,
+) string {
+	t.Helper()
+
+	adminPool := connect(t, environment.adminURL)
+	if _, err := adminPool.Exec(ctx, "SELECT app.create_organization($1, $2)", organizationID, "Runtime Role Test"); err != nil {
+		adminPool.Close()
+		t.Fatalf("create a test organization through the admin function: %v", err)
+	}
+	adminPool.Close()
+
+	databasePool := connect(t, withDatabase(superuserURL, environment.databaseName))
+	var tenantRole string
+	if err := databasePool.QueryRow(ctx, "SELECT app.tenant_role_name($1)", organizationID).Scan(&tenantRole); err != nil {
+		databasePool.Close()
+		t.Fatalf("read the generated tenant role name: %v", err)
+	}
+	databasePool.Close()
+
+	t.Cleanup(func() {
+		cleanupDatabasePool := connect(t, withDatabase(superuserURL, environment.databaseName))
+		if _, err := cleanupDatabasePool.Exec(context.Background(), "DROP OWNED BY "+tenantRole); err != nil {
+			t.Errorf("drop tenant role grants: %v", err)
+		}
+		cleanupDatabasePool.Close()
+
+		cleanupClusterPool := connect(t, superuserURL)
+		defer cleanupClusterPool.Close()
+		if _, err := cleanupClusterPool.Exec(context.Background(),
+			"REVOKE "+tenantRole+" FROM "+integrationRuntimeRole+", "+integrationOwnerRole+" CASCADE"); err != nil {
+			t.Errorf("revoke the test tenant role: %v", err)
+		}
+		if _, err := cleanupClusterPool.Exec(context.Background(), "DROP ROLE IF EXISTS "+tenantRole); err != nil {
+			t.Errorf("drop the test tenant role: %v", err)
+		}
+	})
+	return tenantRole
 }
 
 // TestIntegrationRuntimeRoleVerifierRejectsSharedCredential proves that the
